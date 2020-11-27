@@ -11,12 +11,12 @@ const val APPLICATION_READY = "Application is ready!"
 @RestController
 class SelvtestController {
 
-    @GetMapping("/isAlive", produces = [MediaType.TEXT_PLAIN_VALUE])
+    @GetMapping("/internal/isAlive", produces = [MediaType.TEXT_PLAIN_VALUE])
     fun isAlive(): ResponseEntity<String> {
         return  ResponseEntity.ok(APPLICATION_LIVENESS)
     }
 
-    @GetMapping("/isReady", produces = [MediaType.TEXT_PLAIN_VALUE])
+    @GetMapping("/internal/isReady", produces = [MediaType.TEXT_PLAIN_VALUE])
     fun isReady(): ResponseEntity<String> {
         return  ResponseEntity.ok(APPLICATION_READY)
     }
