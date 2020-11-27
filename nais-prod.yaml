@@ -40,4 +40,6 @@ spec:
     outbound:
       rules:
         - application: flex-reisetilskudd-pdfgen
-
+  azure:
+    application:
+      enabled: true
