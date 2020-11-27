@@ -15,8 +15,10 @@
 	<description>Arkiverer og oppretter oppgaver</description>
 
 	<properties>
-		<java.version>15</java.version>
+		<start-class>no.nav.helse.flex.reisetilskudd.gsak.ApplicationKt</start-class>
+		<java.version>14</java.version>
 		<kotlin.version>1.4.10</kotlin.version>
+		<logstash-logback-encoder.version>4.10</logstash-logback-encoder.version>
 	</properties>
 
 	<dependencies>
@@ -35,6 +37,28 @@
 		<dependency>
 			<groupId>org.jetbrains.kotlin</groupId>
 			<artifactId>kotlin-stdlib-jdk8</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-api</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-logging</artifactId>
+			<exclusions>
+				<exclusion>
+					<groupId>commons-logging</groupId>
+					<artifactId>commons-logging</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+
+		<dependency>
+			<groupId>net.logstash.logback</groupId>
+			<artifactId>logstash-logback-encoder</artifactId>
+			<version>${logstash-logback-encoder.version}</version>
 		</dependency>
 
 		<dependency>
