@@ -43,3 +43,6 @@ spec:
   azure:
     application:
       enabled: true
+  env:
+    - name: FLEX_FSS_PROXY_AAD_CLIENT_ID
+      value: "e8d32a84-c233-4924-9c87-ab6855315a28"

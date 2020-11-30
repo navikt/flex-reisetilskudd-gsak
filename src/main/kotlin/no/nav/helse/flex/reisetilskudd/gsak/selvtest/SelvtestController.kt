@@ -1,5 +1,6 @@
 package no.nav.helse.flex.reisetilskudd.gsak.selvtest
 
+import no.nav.security.token.support.core.api.Unprotected
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
@@ -9,6 +10,7 @@ const val APPLICATION_LIVENESS = "Application is alive!"
 const val APPLICATION_READY = "Application is ready!"
 
 @RestController
+@Unprotected
 class SelvtestController {
 
     @GetMapping("/internal/isAlive", produces = [MediaType.TEXT_PLAIN_VALUE])
