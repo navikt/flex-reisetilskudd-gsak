@@ -1,0 +1,13 @@
+{
+  "app": "flex-reisetilskudd-gsak",
+  "cluster": "dev-gcp",
+  "namespace": "flex",
+  "team": "flex",
+  "externalHosts": [
+    "flex-fss-proxy.dev-fss-pub.nais.io"
+  ],
+  "env": {
+    "FLEX_FSS_PROXY_AAD_CLIENT_ID": "e8d32a84-c233-4924-9c87-ab6855315a28",
+    "FLEX_FSS_PROXY_URL": "https://flex-fss-proxy.dev-fss-pub.nais.io"
+  }
+}

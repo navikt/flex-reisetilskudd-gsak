@@ -1,10 +1,10 @@
 apiVersion: "nais.io/v1alpha1"
 kind: "Application"
 metadata:
-  name: flex-reisetilskudd-gsak
-  namespace: flex
+  name: {{app}}
+  namespace: {{namespace}}
   labels:
-    team: flex
+    team: {{team}}
 spec:
   image: {{ image }}
   replicas:
@@ -40,9 +40,15 @@ spec:
     outbound:
       rules:
         - application: flex-reisetilskudd-pdfgen
+      external:
+      {{ #each externalHosts as |url|}}
+          - host: {{url}}
+      {{/each}}
   azure:
     application:
       enabled: true
   env:
-    - name: FLEX_FSS_PROXY_AAD_CLIENT_ID
-      value: "e8d32a84-c233-4924-9c87-ab6855315a28"
+  {{#each env}}
+     - name: {{@key}}
+       value: {{this}}
+  {{/each}}
