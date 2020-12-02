@@ -41,7 +41,7 @@ spec:
       rules:
         - application: flex-reisetilskudd-pdfgen
       external:
-      {{ #each externalHosts as |url|}}
+      {{#each externalHosts as |url|}}
           - host: {{url}}
       {{/each}}
   azure:
