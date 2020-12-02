@@ -1,6 +1,5 @@
 {
   "app": "flex-reisetilskudd-gsak",
-  "cluster": "prod-gcp",
   "namespace": "flex",
   "team": "flex",
   "externalHosts": [

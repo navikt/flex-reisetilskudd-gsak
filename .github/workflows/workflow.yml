@@ -63,6 +63,7 @@ jobs:
         name: Deploy to dev-gcp
         env:
           APIKEY: ${{ secrets.NAIS_DEPLOY_APIKEY }}
+          CLUSTER: dev-gcp
           RESOURCE: naiserator.yaml
           VARS: dev-gcp.json
 
@@ -85,6 +86,7 @@ jobs:
         name: Deploy to prod-gcp
         env:
           APIKEY: ${{ secrets.NAIS_DEPLOY_APIKEY }}
+          CLUSTER: prod-gcp
           RESOURCE: naiserator.yaml
           VARS: prod-gcp.json
 
