@@ -6,7 +6,7 @@
     "flex-fss-proxy.prod-fss-pub.nais.io"
   ],
   "env": {
-    "FLEX_FSS_PROXY_AAD_CLIENT_ID": "e8d32a84-c233-4924-9c87-ab6855315a28",
+    "FLEX_FSS_PROXY_AAD_CLIENT_ID": "97abc02f-820c-4c6f-a25a-ec19ac7cae8c",
     "FLEX_FSS_PROXY_URL": "https://flex-fss-proxy.prod-fss-pub.nais.io"
   }
 }
