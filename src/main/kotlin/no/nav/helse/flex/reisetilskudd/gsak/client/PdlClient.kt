@@ -39,13 +39,14 @@ query(${"$"}ident: ID!){
 """
 
     @Retryable(exclude = [FunctionalPdlError::class])
+    // TODO bytt til å hente navn
     fun hentAddressebeskyttelseGradering(fnr: String): String {
 
         val graphQLRequest = GraphQLRequest(
                 query = HENT_ADRESSEBESKYTTELSE_QUERY,
                 variables = Collections.singletonMap(IDENT, fnr))
 
-        val responseEntity = restTemplate.exchange(flexFssProxyUrl, HttpMethod.POST, HttpEntity(requestToJson(graphQLRequest), createHeaderWithTema()), String::class.java)
+        val responseEntity = restTemplate.exchange("$flexFssProxyUrl/api/pdl/graphql", HttpMethod.POST, HttpEntity(requestToJson(graphQLRequest), createHeaderWithTema()), String::class.java)
 
         if (responseEntity.statusCode != HttpStatus.OK) {
             throw RuntimeException("PDL svarer med status ${responseEntity.statusCode} - ${responseEntity.body}")
