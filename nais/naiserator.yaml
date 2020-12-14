@@ -44,6 +44,8 @@ spec:
       {{#each externalHosts as |url|}}
           - host: {{url}}
       {{/each}}
+  kafka:
+    pool: {{kafkaPool}}
   azure:
     application:
       enabled: true
