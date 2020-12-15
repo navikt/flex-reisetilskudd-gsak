@@ -2,6 +2,7 @@
   "app": "flex-reisetilskudd-gsak",
   "namespace": "flex",
   "team": "flex",
+  "kafkaPool": "nav-dev",
   "externalHosts": [
     "flex-fss-proxy.dev-fss-pub.nais.io"
   ],
