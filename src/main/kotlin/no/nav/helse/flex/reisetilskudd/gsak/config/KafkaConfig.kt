@@ -12,7 +12,7 @@ import org.springframework.kafka.listener.ContainerProperties
 
 @EnableKafka
 @Configuration
-class KafkaConfig{
+class KafkaConfig {
 
     @Bean
     fun consumerFactory(properties: KafkaProperties): ConsumerFactory<String, String> {
@@ -20,10 +20,13 @@ class KafkaConfig{
     }
 
     @Bean
-    fun kafkaListenerContainerFactory(consumerFactory: ConsumerFactory<String,String>): ConcurrentKafkaListenerContainerFactory<String, String> {
+    fun kafkaListenerContainerFactory(consumerFactory: ConsumerFactory<String, String>): ConcurrentKafkaListenerContainerFactory<String, String> {
         val factory = ConcurrentKafkaListenerContainerFactory<String, String>()
         factory.consumerFactory = consumerFactory
         factory.containerProperties.ackMode = ContainerProperties.AckMode.MANUAL_IMMEDIATE
         return factory
     }
 }
+
+
+const val FLEX_APEN_REISETILSKUDD_TOPIC = "flex.aapen-reisetilskudd"

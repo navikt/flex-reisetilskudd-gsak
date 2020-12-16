@@ -1,10 +1,17 @@
 server:
   port: 8080
 
-spring :
+spring:
   main.banner-mode: 'off'
   profiles:
     active: default
+  flyway:
+    enabled: true
+  datasource:
+    url: "jdbc:postgresql://${NAIS_DATABASE_FLEX_REISETILSKUDD_GSAK_FLEX_REISETILSKUDD_GSAK_DB_HOST}:${NAIS_DATABASE_FLEX_REISETILSKUDD_GSAK_FLEX_REISETILSKUDD_GSAK_DB_PORT}/${NAIS_DATABASE_FLEX_REISETILSKUDD_GSAK_FLEX_REISETILSKUDD_GSAK_DB_DATABASE}"
+    username: ${NAIS_DATABASE_FLEX_REISETILSKUDD_GSAK_FLEX_REISETILSKUDD_GSAK_DB_USERNAME}
+    password: ${NAIS_DATABASE_FLEX_REISETILSKUDD_GSAK_FLEX_REISETILSKUDD_GSAK_DB_PASSWORD}
+
   kafka:
     bootstrap-servers: ${KAFKA_BROKERS}
     properties:

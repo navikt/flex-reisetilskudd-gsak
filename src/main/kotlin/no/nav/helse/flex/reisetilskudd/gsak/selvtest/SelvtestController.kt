@@ -15,11 +15,11 @@ class SelvtestController {
 
     @GetMapping("/internal/isAlive", produces = [MediaType.TEXT_PLAIN_VALUE])
     fun isAlive(): ResponseEntity<String> {
-        return  ResponseEntity.ok(APPLICATION_LIVENESS)
+        return ResponseEntity.ok(APPLICATION_LIVENESS)
     }
 
     @GetMapping("/internal/isReady", produces = [MediaType.TEXT_PLAIN_VALUE])
     fun isReady(): ResponseEntity<String> {
-        return  ResponseEntity.ok(APPLICATION_READY)
+        return ResponseEntity.ok(APPLICATION_READY)
     }
 }
