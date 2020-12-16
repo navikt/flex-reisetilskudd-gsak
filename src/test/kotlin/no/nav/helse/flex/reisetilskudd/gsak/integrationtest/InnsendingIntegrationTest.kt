@@ -13,13 +13,23 @@ import org.hamcrest.CoreMatchers.`is`
 import org.hamcrest.CoreMatchers.nullValue
 import org.hamcrest.MatcherAssert.assertThat
 import org.hamcrest.Matchers.lessThan
+import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.http.HttpMethod
+import org.springframework.http.HttpStatus
+import org.springframework.http.MediaType
 import org.springframework.kafka.test.context.EmbeddedKafka
 import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.junit4.SpringRunner
+import org.springframework.test.web.client.ExpectedCount
+import org.springframework.test.web.client.MockRestServiceServer
+import org.springframework.test.web.client.match.MockRestRequestMatchers
+import org.springframework.test.web.client.response.MockRestResponseCreators
+import org.springframework.web.client.RestTemplate
+import java.net.URI
 import java.time.Instant
 import java.util.*
 import java.util.concurrent.TimeUnit
@@ -43,9 +53,28 @@ class InnsendingIntegrationTest {
     @Autowired
     private lateinit var innsendingDao: InnsendingDao
 
+    @Autowired
+    private lateinit var simpleRestTemplate: RestTemplate
+
+    private lateinit var mockServer: MockRestServiceServer
+
+
+    @Before
+    fun init() {
+        mockServer = MockRestServiceServer.createServer(simpleRestTemplate)
+    }
+
+
     @Test
     fun `SENDT søknad prosesseres og lagres i databasen`() {
         reisetilskuddConsumer.meldinger = 0
+
+        mockServer.expect(ExpectedCount.once(),
+                MockRestRequestMatchers.requestTo(URI("http://flex-reisetilskudd-pdfgen/api/v1/genpdf/reisetilskudd/reisetilskudd")))
+                .andExpect(MockRestRequestMatchers.method(HttpMethod.POST))
+                .andRespond(MockRestResponseCreators.withStatus(HttpStatus.OK)
+                        .contentType(MediaType.APPLICATION_PDF)
+                        .body("PDF bytes :)"))
 
         val soknad = Reisetilskudd(
                 status = ReisetilskuddStatus.SENDT,
@@ -64,6 +93,8 @@ class InnsendingIntegrationTest {
         assertThat(innsending.journalpostId, `is`("TODO"))
         assertThat(innsending.saksId, `is`("TODO"))
         assertThat(Instant.now().toEpochMilli() - innsending.opprettet.toEpochMilli(), lessThan(2000))
+
+        mockServer.verify()
     }
 
     @Test

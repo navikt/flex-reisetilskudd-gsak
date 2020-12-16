@@ -1,15 +1,17 @@
 package no.nav.helse.flex.reisetilskudd.gsak.innsending
 
+import no.nav.helse.flex.reisetilskudd.gsak.client.PdfGeneratorClient
 import no.nav.helse.flex.reisetilskudd.gsak.database.InnsendingDao
-import no.nav.helse.flex.reisetilskudd.gsak.domain.Innsending
-import no.nav.helse.flex.reisetilskudd.gsak.domain.ReisetilskuddStatus
-import no.nav.helse.flex.reisetilskudd.gsak.domain.tilReisetilskudd
+import no.nav.helse.flex.reisetilskudd.gsak.domain.*
 import no.nav.helse.flex.reisetilskudd.gsak.log
 import org.springframework.stereotype.Component
 import java.time.Instant
 
 @Component
-class InnsendingService(private val innsendingDao: InnsendingDao) {
+class InnsendingService(
+        private val innsendingDao: InnsendingDao,
+        private val pdfGeneratorClient: PdfGeneratorClient,
+) {
 
     private val log = log()
 
@@ -32,6 +34,11 @@ class InnsendingService(private val innsendingDao: InnsendingDao) {
                 journalpostId = "TODO",
                 opprettet = Instant.now(),
         )
+
+        val pdf = pdfGeneratorClient.genererPdf(PdfRequest(
+                navn = "Navn Navnesen Fra Pdl",
+                reisetilskuddId = soknad.reisetilskuddId
+        ))
 
         innsendingDao.lagreInnsending(innsending)
 
