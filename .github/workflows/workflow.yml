@@ -1,7 +1,7 @@
 name: Bygg, publish og deploy
 on:
-  push:
   workflow_dispatch:
+  push:
 env:
   APP: flex-reisetilskudd-gsak
 jobs:
