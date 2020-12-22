@@ -28,17 +28,21 @@ jobs:
         with:
           name: VERSION.txt
           path: VERSION.txt
-      - name: Restore .m2 cache
+      - name: Gradle wrapper validation
+        uses: gradle/wrapper-validation-action@v1
+      - name: Setup gradle dependency cache
         uses: actions/cache@v2
         with:
-          path: ~/.m2/repository
-          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*') }}
           restore-keys: |
-            ${{ runner.os }}-maven-
-      - name: Bygg og test
-        run: mvn --settings maven-settings.xml clean install
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            ${{ runner.os }}-gradle-
+      - name: Test
+        run: ./gradlew test
+      - name: Bygg
+        run: ./gradlew bootJar
       - name: Build and publish Docker image
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
