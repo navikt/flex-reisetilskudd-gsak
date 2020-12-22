@@ -18,7 +18,7 @@ class PdfGeneratorClient(private val simpleRestTemplate: RestTemplate,
 
     @Retryable(backoff = Backoff(delay = 5000))
     fun genererPdf(pdfRequest: PdfRequest): ByteArray {
-        val url = "$pdfgenUrl/api/v1/genpdf/reisetilskudd//reisetilskudd"
+        val url = "$pdfgenUrl/api/v1/genpdf/reisetilskudd/reisetilskudd"
 
         val headers = HttpHeaders()
         headers.contentType = MediaType.APPLICATION_JSON

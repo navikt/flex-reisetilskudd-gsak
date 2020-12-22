@@ -1,5 +1,6 @@
 package no.nav.helse.flex.reisetilskudd.gsak.innsending
 
+import no.nav.helse.flex.reisetilskudd.gsak.client.DokArkivClient
 import no.nav.helse.flex.reisetilskudd.gsak.client.PdfGeneratorClient
 import no.nav.helse.flex.reisetilskudd.gsak.database.InnsendingDao
 import no.nav.helse.flex.reisetilskudd.gsak.domain.*
@@ -11,38 +12,44 @@ import java.time.Instant
 class InnsendingService(
         private val innsendingDao: InnsendingDao,
         private val pdfGeneratorClient: PdfGeneratorClient,
+        private val dokArkivClient: DokArkivClient,
 ) {
 
     private val log = log()
 
     fun behandleReisetilskuddSoknad(soknadString: String) {
-        val soknad = soknadString.tilReisetilskudd()
-        if (soknad.status != ReisetilskuddStatus.SENDT) {
-            log.info("Ignorerer reisetilskuddsøknad ${soknad.reisetilskuddId} og status ${soknad.status}")
+        val reisetilskudd = soknadString.tilReisetilskudd()
+        if (reisetilskudd.status != ReisetilskuddStatus.SENDT) {
+            log.info("Ignorerer reisetilskuddsøknad ${reisetilskudd.reisetilskuddId} og status ${reisetilskudd.status}")
             return
         }
 
-        innsendingDao.hentInnsending(soknad.reisetilskuddId)?.let {
+        innsendingDao.hentInnsending(reisetilskudd.reisetilskuddId)?.let {
             log.warn("Har allerede behandlet reisetilskuddsøknad ${it.reisetilskuddId} ${it.opprettet}")
             return
         }
 
-        val innsending = Innsending(
-                fnr = soknad.fnr,
-                reisetilskuddId = soknad.reisetilskuddId,
-                saksId = "TODO",
-                journalpostId = "TODO",
-                opprettet = Instant.now(),
-        )
 
         val pdf = pdfGeneratorClient.genererPdf(PdfRequest(
                 navn = "Navn Navnesen Fra Pdl",
-                reisetilskuddId = soknad.reisetilskuddId
+                reisetilskuddId = reisetilskudd.reisetilskuddId
         ))
+
+        val journalpostRequest = skapJournalpostRequest(reisetilskudd = reisetilskudd, pdf = pdf )
+
+        val journalpostResponse = dokArkivClient.opprettJournalpost(journalpostRequest, reisetilskudd.reisetilskuddId)
+
+        val innsending = Innsending(
+                fnr = reisetilskudd.fnr,
+                reisetilskuddId = reisetilskudd.reisetilskuddId,
+                saksId = "TODO",
+                journalpostId = journalpostResponse.journalpostId,
+                opprettet = Instant.now(),
+        )
 
         innsendingDao.lagreInnsending(innsending)
 
-        log.info("Behandlet reisetilskuddsøknad ${soknad.reisetilskuddId} og status ${soknad.status}")
+        log.info("Behandlet reisetilskuddsøknad ${reisetilskudd.reisetilskuddId} og status ${reisetilskudd.status}")
 
     }
 }

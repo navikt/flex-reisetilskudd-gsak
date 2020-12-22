@@ -8,22 +8,48 @@ import no.nav.security.token.support.spring.api.EnableJwtTokenValidation
 import org.springframework.boot.web.client.RestTemplateBuilder
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.context.annotation.Profile
 import org.springframework.http.HttpRequest
 import org.springframework.http.client.ClientHttpRequestExecution
 import org.springframework.http.client.ClientHttpRequestInterceptor
 import org.springframework.web.client.RestTemplate
-import java.util.*
+
 
 @EnableJwtTokenValidation
 @EnableOAuth2Client(cacheEnabled = true)
 @Configuration
-internal class OAuth2Configuration {
+@Profile("default")
+class AadRestTemplateConfiguration {
+
 
     @Bean
-    fun downstreamResourceRestTemplate(restTemplateBuilder: RestTemplateBuilder,
+    fun dokarkivRestTemplate(restTemplateBuilder: RestTemplateBuilder,
+                                 clientConfigurationProperties: ClientConfigurationProperties,
+                                 oAuth2AccessTokenService: OAuth2AccessTokenService): RestTemplate =
+            downstreamRestTemplate(
+                    registrationName = "dokarkiv-client-credentials",
+                    restTemplateBuilder = restTemplateBuilder,
+                    clientConfigurationProperties = clientConfigurationProperties,
+                    oAuth2AccessTokenService = oAuth2AccessTokenService,
+            )
+
+    @Bean
+    fun flexFssProxyRestTemplate(restTemplateBuilder: RestTemplateBuilder,
+                                 clientConfigurationProperties: ClientConfigurationProperties,
+                                 oAuth2AccessTokenService: OAuth2AccessTokenService): RestTemplate =
+            downstreamRestTemplate(
+                    registrationName = "flex-fss-proxy-client-credentials",
+                    restTemplateBuilder = restTemplateBuilder,
+                    clientConfigurationProperties = clientConfigurationProperties,
+                    oAuth2AccessTokenService = oAuth2AccessTokenService,
+            )
+
+
+    private fun downstreamRestTemplate(restTemplateBuilder: RestTemplateBuilder,
                                        clientConfigurationProperties: ClientConfigurationProperties,
-                                       oAuth2AccessTokenService: OAuth2AccessTokenService): RestTemplate {
-        val registrationName = "flex-fss-proxy-client-credentials"
+                                       oAuth2AccessTokenService: OAuth2AccessTokenService,
+                                       registrationName: String
+    ): RestTemplate {
         val clientProperties = clientConfigurationProperties.registration[registrationName]
                 ?: throw RuntimeException("Fant ikke config for $registrationName")
         return restTemplateBuilder

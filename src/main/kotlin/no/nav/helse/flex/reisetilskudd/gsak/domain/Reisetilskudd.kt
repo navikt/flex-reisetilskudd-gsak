@@ -8,9 +8,7 @@ data class Reisetilskudd(
         val status: ReisetilskuddStatus,
         val reisetilskuddId: String,
         val fnr: String,
-) {
-    fun serialisertTilString(): String = objectMapper.writeValueAsString(this)
-}
+)
 
 enum class ReisetilskuddStatus {
     FREMTIDIG, ÅPEN, SENDT

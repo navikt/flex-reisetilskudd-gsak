@@ -1,4 +1,4 @@
-logging.config: "classpath:logback-local.xml"
+logging.config: "classpath:logback-test.xml"
 
 flex.fss.proxy.url: http://flex-fss-proxy
 
@@ -13,8 +13,18 @@ no.nav.security.jwt:
           client-id: ${AZURE_APP_CLIENT_ID}
           client-secret: ${AZURE_APP_CLIENT_SECRET}
           client-auth-method: client_secret_basic
+      dokarkiv-client-credentials:
+        token-endpoint-url: https://login.microsoftonline.com/${AZURE_APP_TENANT_ID}/oauth2/v2.0/token
+        grant-type: client_credentials
+        scope: api://${DOKARKIV_AAD_CLIENT_ID}/.default
+        authentication:
+          client-id: ${AZURE_APP_CLIENT_ID}
+          client-secret: ${AZURE_APP_CLIENT_SECRET}
+          client-auth-method: client_secret_basic
 
 spring:
+  profiles:
+    active: test
   kafka:
     bootstrap-servers: ${spring.embedded.kafka.brokers}
     properties:
@@ -31,3 +41,5 @@ spring:
     username: sa
     password: sa
     driver-class-name: org.h2.Driver
+
+dokarkiv.url: "http://dokarkiv"

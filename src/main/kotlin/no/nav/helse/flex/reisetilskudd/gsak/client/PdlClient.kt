@@ -15,7 +15,7 @@ import java.util.*
 
 @Component
 class PdlClient(
-        private val downstreamResourceRestTemplate: RestTemplate,
+        private val flexFssProxyRestTemplate: RestTemplate,
         @Value("\${flex.fss.proxy.url}") private val flexFssProxyUrl: String) {
 
     private val TEMA = "Tema"
@@ -46,7 +46,7 @@ query(${"$"}ident: ID!){
                 query = HENT_ADRESSEBESKYTTELSE_QUERY,
                 variables = Collections.singletonMap(IDENT, fnr))
 
-        val responseEntity = downstreamResourceRestTemplate.exchange("$flexFssProxyUrl/api/pdl/graphql", HttpMethod.POST, HttpEntity(requestToJson(graphQLRequest), createHeaderWithTema()), String::class.java)
+        val responseEntity = flexFssProxyRestTemplate.exchange("$flexFssProxyUrl/api/pdl/graphql", HttpMethod.POST, HttpEntity(requestToJson(graphQLRequest), createHeaderWithTema()), String::class.java)
 
         if (responseEntity.statusCode != HttpStatus.OK) {
             throw RuntimeException("PDL svarer med status ${responseEntity.statusCode} - ${responseEntity.body}")
