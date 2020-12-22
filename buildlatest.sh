@@ -1,5 +1,5 @@
 echo "Bygger flex-reisetilskudd-gsak latest"
 
-mvn clean install
+./gradlew bootJar
 
 docker build . -t flex-reisetilskudd-gsak:latest
