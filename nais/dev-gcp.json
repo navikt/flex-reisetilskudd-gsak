@@ -4,7 +4,8 @@
   "team": "flex",
   "kafkaPool": "nav-dev",
   "externalHosts": [
-    "flex-fss-proxy.dev-fss-pub.nais.io"
+    "flex-fss-proxy.dev-fss-pub.nais.io",
+    "dokarkiv.dev-fss-pub.nais.io"
   ],
   "azureTenant": "trygdeetaten.no",
   "env": {

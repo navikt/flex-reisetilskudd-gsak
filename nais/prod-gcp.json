@@ -4,7 +4,8 @@
   "team": "flex",
   "kafkaPool": "nav-prod",
   "externalHosts": [
-    "flex-fss-proxy.prod-fss-pub.nais.io"
+    "flex-fss-proxy.prod-fss-pub.nais.io",
+    "dokarkiv.prod-fss-pub.nais.io"
   ],
   "azureTenant": "nav.no",
   "env": {
