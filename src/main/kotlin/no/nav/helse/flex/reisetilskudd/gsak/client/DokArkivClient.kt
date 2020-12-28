@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.HttpEntity
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpMethod
+import org.springframework.http.HttpStatus.CREATED
 import org.springframework.http.HttpStatus.OK
 import org.springframework.http.MediaType
 import org.springframework.retry.annotation.Backoff
@@ -36,7 +37,7 @@ class DokArkivClient(private val dokarkivRestTemplate: RestTemplate,
 
         val result = dokarkivRestTemplate.exchange(url, HttpMethod.POST, entity, JournalpostResponse::class.java)
 
-        if (result.statusCode != OK) {
+        if (!result.statusCode.is2xxSuccessful) {
             throw RuntimeException("dokarkiv feiler med HTTP-${result.statusCode} for reisetilskuddsøknad med id: ${reisetilskuddId}")
         }
 
