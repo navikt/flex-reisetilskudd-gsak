@@ -9,7 +9,6 @@ import org.springframework.kafka.core.ConsumerFactory
 import org.springframework.kafka.core.DefaultKafkaConsumerFactory
 import org.springframework.kafka.listener.ContainerProperties
 
-
 @EnableKafka
 @Configuration
 class KafkaConfig {
@@ -27,6 +26,5 @@ class KafkaConfig {
         return factory
     }
 }
-
 
 const val FLEX_APEN_REISETILSKUDD_TOPIC = "flex.aapen-reisetilskudd"

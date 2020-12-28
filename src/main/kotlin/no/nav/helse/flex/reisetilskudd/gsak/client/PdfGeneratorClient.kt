@@ -13,8 +13,10 @@ import org.springframework.stereotype.Controller
 import org.springframework.web.client.RestTemplate
 
 @Controller
-class PdfGeneratorClient(private val simpleRestTemplate: RestTemplate,
-                         @Value("\${pdfgen.url:http://flex-reisetilskudd-pdfgen}") private val pdfgenUrl: String) {
+class PdfGeneratorClient(
+    private val simpleRestTemplate: RestTemplate,
+    @Value("\${pdfgen.url:http://flex-reisetilskudd-pdfgen}") private val pdfgenUrl: String
+) {
 
     @Retryable(backoff = Backoff(delay = 5000))
     fun genererPdf(pdfRequest: PdfRequest): ByteArray {
@@ -32,8 +34,6 @@ class PdfGeneratorClient(private val simpleRestTemplate: RestTemplate,
         }
 
         return result.body
-                ?: throw RuntimeException("pdfgenerator returnerer ikke data for reisetilskuddsøknad med id: ${pdfRequest.reisetilskuddId}")
+            ?: throw RuntimeException("pdfgenerator returnerer ikke data for reisetilskuddsøknad med id: ${pdfRequest.reisetilskuddId}")
     }
 }
-
-

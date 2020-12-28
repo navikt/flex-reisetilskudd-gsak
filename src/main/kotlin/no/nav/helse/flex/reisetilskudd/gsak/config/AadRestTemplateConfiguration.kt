@@ -14,51 +14,55 @@ import org.springframework.http.client.ClientHttpRequestExecution
 import org.springframework.http.client.ClientHttpRequestInterceptor
 import org.springframework.web.client.RestTemplate
 
-
 @EnableJwtTokenValidation
 @EnableOAuth2Client(cacheEnabled = true)
 @Configuration
 @Profile("default")
 class AadRestTemplateConfiguration {
 
+    @Bean
+    fun dokarkivRestTemplate(
+        restTemplateBuilder: RestTemplateBuilder,
+        clientConfigurationProperties: ClientConfigurationProperties,
+        oAuth2AccessTokenService: OAuth2AccessTokenService
+    ): RestTemplate =
+        downstreamRestTemplate(
+            registrationName = "dokarkiv-client-credentials",
+            restTemplateBuilder = restTemplateBuilder,
+            clientConfigurationProperties = clientConfigurationProperties,
+            oAuth2AccessTokenService = oAuth2AccessTokenService,
+        )
 
     @Bean
-    fun dokarkivRestTemplate(restTemplateBuilder: RestTemplateBuilder,
-                                 clientConfigurationProperties: ClientConfigurationProperties,
-                                 oAuth2AccessTokenService: OAuth2AccessTokenService): RestTemplate =
-            downstreamRestTemplate(
-                    registrationName = "dokarkiv-client-credentials",
-                    restTemplateBuilder = restTemplateBuilder,
-                    clientConfigurationProperties = clientConfigurationProperties,
-                    oAuth2AccessTokenService = oAuth2AccessTokenService,
-            )
+    fun flexFssProxyRestTemplate(
+        restTemplateBuilder: RestTemplateBuilder,
+        clientConfigurationProperties: ClientConfigurationProperties,
+        oAuth2AccessTokenService: OAuth2AccessTokenService
+    ): RestTemplate =
+        downstreamRestTemplate(
+            registrationName = "flex-fss-proxy-client-credentials",
+            restTemplateBuilder = restTemplateBuilder,
+            clientConfigurationProperties = clientConfigurationProperties,
+            oAuth2AccessTokenService = oAuth2AccessTokenService,
+        )
 
-    @Bean
-    fun flexFssProxyRestTemplate(restTemplateBuilder: RestTemplateBuilder,
-                                 clientConfigurationProperties: ClientConfigurationProperties,
-                                 oAuth2AccessTokenService: OAuth2AccessTokenService): RestTemplate =
-            downstreamRestTemplate(
-                    registrationName = "flex-fss-proxy-client-credentials",
-                    restTemplateBuilder = restTemplateBuilder,
-                    clientConfigurationProperties = clientConfigurationProperties,
-                    oAuth2AccessTokenService = oAuth2AccessTokenService,
-            )
-
-
-    private fun downstreamRestTemplate(restTemplateBuilder: RestTemplateBuilder,
-                                       clientConfigurationProperties: ClientConfigurationProperties,
-                                       oAuth2AccessTokenService: OAuth2AccessTokenService,
-                                       registrationName: String
+    private fun downstreamRestTemplate(
+        restTemplateBuilder: RestTemplateBuilder,
+        clientConfigurationProperties: ClientConfigurationProperties,
+        oAuth2AccessTokenService: OAuth2AccessTokenService,
+        registrationName: String
     ): RestTemplate {
         val clientProperties = clientConfigurationProperties.registration[registrationName]
-                ?: throw RuntimeException("Fant ikke config for $registrationName")
+            ?: throw RuntimeException("Fant ikke config for $registrationName")
         return restTemplateBuilder
-                .additionalInterceptors(bearerTokenInterceptor(clientProperties, oAuth2AccessTokenService))
-                .build()
+            .additionalInterceptors(bearerTokenInterceptor(clientProperties, oAuth2AccessTokenService))
+            .build()
     }
 
-    private fun bearerTokenInterceptor(clientProperties: ClientProperties,
-                                       oAuth2AccessTokenService: OAuth2AccessTokenService): ClientHttpRequestInterceptor {
+    private fun bearerTokenInterceptor(
+        clientProperties: ClientProperties,
+        oAuth2AccessTokenService: OAuth2AccessTokenService
+    ): ClientHttpRequestInterceptor {
         return ClientHttpRequestInterceptor { request: HttpRequest, body: ByteArray, execution: ClientHttpRequestExecution ->
             val response = oAuth2AccessTokenService.getAccessToken(clientProperties)
             request.headers.setBearerAuth(response.accessToken)

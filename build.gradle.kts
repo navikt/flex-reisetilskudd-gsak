@@ -12,6 +12,17 @@ version = "0.0.1-SNAPSHOT"
 description = "flex-reisetilskudd-gsak"
 java.sourceCompatibility = JavaVersion.VERSION_14
 
+buildscript {
+    repositories {
+        maven("https://plugins.gradle.org/m2/")
+    }
+    dependencies {
+        classpath("org.jlleitschuh.gradle:ktlint-gradle:9.4.1")
+    }
+}
+
+apply(plugin = "org.jlleitschuh.gradle.ktlint")
+
 repositories {
     mavenCentral()
     maven {
@@ -50,7 +61,6 @@ dependencies {
     testImplementation("org.awaitility:awaitility")
     testImplementation("org.hamcrest:hamcrest-library")
     testImplementation("org.scala-lang:scala-library:2.12.11")
-
 }
 
 tasks.getByName<org.springframework.boot.gradle.tasks.bundling.BootJar>("bootJar") {
@@ -69,4 +79,3 @@ tasks.withType<Test> {
         events("PASSED", "FAILED", "SKIPPED")
     }
 }
-

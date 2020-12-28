@@ -10,9 +10,9 @@ import java.time.Instant
 
 @Component
 class InnsendingService(
-        private val innsendingDao: InnsendingDao,
-        private val pdfGeneratorClient: PdfGeneratorClient,
-        private val dokArkivClient: DokArkivClient,
+    private val innsendingDao: InnsendingDao,
+    private val pdfGeneratorClient: PdfGeneratorClient,
+    private val dokArkivClient: DokArkivClient,
 ) {
 
     private val log = log()
@@ -29,27 +29,27 @@ class InnsendingService(
             return
         }
 
-
-        val pdf = pdfGeneratorClient.genererPdf(PdfRequest(
+        val pdf = pdfGeneratorClient.genererPdf(
+            PdfRequest(
                 navn = "Navn Navnesen Fra Pdl",
                 reisetilskuddId = reisetilskudd.reisetilskuddId
-        ))
+            )
+        )
 
-        val journalpostRequest = skapJournalpostRequest(reisetilskudd = reisetilskudd, pdf = pdf )
+        val journalpostRequest = skapJournalpostRequest(reisetilskudd = reisetilskudd, pdf = pdf)
 
         val journalpostResponse = dokArkivClient.opprettJournalpost(journalpostRequest, reisetilskudd.reisetilskuddId)
 
         val innsending = Innsending(
-                fnr = reisetilskudd.fnr,
-                reisetilskuddId = reisetilskudd.reisetilskuddId,
-                saksId = "TODO",
-                journalpostId = journalpostResponse.journalpostId,
-                opprettet = Instant.now(),
+            fnr = reisetilskudd.fnr,
+            reisetilskuddId = reisetilskudd.reisetilskuddId,
+            saksId = "TODO",
+            journalpostId = journalpostResponse.journalpostId,
+            opprettet = Instant.now(),
         )
 
         innsendingDao.lagreInnsending(innsending)
 
         log.info("Behandlet reisetilskuddsøknad ${reisetilskudd.reisetilskuddId} og status ${reisetilskudd.status}")
-
     }
 }

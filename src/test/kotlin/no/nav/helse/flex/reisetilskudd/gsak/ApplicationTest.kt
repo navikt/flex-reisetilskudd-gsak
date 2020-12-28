@@ -6,12 +6,12 @@ import org.springframework.kafka.test.context.EmbeddedKafka
 
 @SpringBootTest
 @EmbeddedKafka(
-        partitions = 1,
-        topics = ["flex.aapen-reisetilskudd"])
+    partitions = 1,
+    topics = ["flex.aapen-reisetilskudd"]
+)
 class ApplicationTest {
 
     @Test
     fun contextLoads() {
     }
-
 }
