@@ -3,9 +3,11 @@ package no.nav.helse.flex.reisetilskudd.gsak.integrationtest
 import no.nav.helse.flex.reisetilskudd.gsak.config.FLEX_APEN_REISETILSKUDD_TOPIC
 import no.nav.helse.flex.reisetilskudd.gsak.database.InnsendingDao
 import no.nav.helse.flex.reisetilskudd.gsak.domain.Innsending
+import no.nav.helse.flex.reisetilskudd.gsak.domain.JournalpostResponse
 import no.nav.helse.flex.reisetilskudd.gsak.domain.Reisetilskudd
 import no.nav.helse.flex.reisetilskudd.gsak.domain.ReisetilskuddStatus
 import no.nav.helse.flex.reisetilskudd.gsak.kafka.ReisetilskuddConsumer
+import no.nav.helse.flex.reisetilskudd.gsak.objectMapper
 import org.apache.kafka.clients.producer.KafkaProducer
 import org.apache.kafka.clients.producer.ProducerRecord
 import org.awaitility.Awaitility.await
@@ -24,25 +26,25 @@ import org.springframework.http.MediaType
 import org.springframework.kafka.test.context.EmbeddedKafka
 import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.junit4.SpringRunner
-import org.springframework.test.web.client.ExpectedCount
+import org.springframework.test.web.client.ExpectedCount.once
 import org.springframework.test.web.client.MockRestServiceServer
-import org.springframework.test.web.client.match.MockRestRequestMatchers
-import org.springframework.test.web.client.response.MockRestResponseCreators
+import org.springframework.test.web.client.match.MockRestRequestMatchers.method
+import org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo
+import org.springframework.test.web.client.response.MockRestResponseCreators.withStatus
 import org.springframework.web.client.RestTemplate
 import java.net.URI
 import java.time.Instant
 import java.util.*
 import java.util.concurrent.TimeUnit
 
-
 @SpringBootTest
 @DirtiesContext
 @EmbeddedKafka(
-        partitions = 1,
-        topics = [FLEX_APEN_REISETILSKUDD_TOPIC])
+    partitions = 1,
+    topics = [FLEX_APEN_REISETILSKUDD_TOPIC]
+)
 @RunWith(SpringRunner::class)
 class InnsendingIntegrationTest {
-
 
     @Autowired
     private lateinit var producer: KafkaProducer<String, String>
@@ -56,30 +58,50 @@ class InnsendingIntegrationTest {
     @Autowired
     private lateinit var simpleRestTemplate: RestTemplate
 
-    private lateinit var mockServer: MockRestServiceServer
+    @Autowired
+    private lateinit var dokarkivRestTemplate: RestTemplate
 
+    private lateinit var mockServer: MockRestServiceServer
+    private lateinit var dokarkivMockServer: MockRestServiceServer
 
     @Before
     fun init() {
         mockServer = MockRestServiceServer.createServer(simpleRestTemplate)
+        dokarkivMockServer = MockRestServiceServer.createServer(dokarkivRestTemplate)
     }
-
 
     @Test
     fun `SENDT søknad prosesseres og lagres i databasen`() {
         reisetilskuddConsumer.meldinger = 0
 
-        mockServer.expect(ExpectedCount.once(),
-                MockRestRequestMatchers.requestTo(URI("http://flex-reisetilskudd-pdfgen/api/v1/genpdf/reisetilskudd/reisetilskudd")))
-                .andExpect(MockRestRequestMatchers.method(HttpMethod.POST))
-                .andRespond(MockRestResponseCreators.withStatus(HttpStatus.OK)
-                        .contentType(MediaType.APPLICATION_PDF)
-                        .body("PDF bytes :)"))
+        mockServer.expect(
+            once(),
+            requestTo(URI("http://flex-reisetilskudd-pdfgen/api/v1/genpdf/reisetilskudd/reisetilskudd"))
+        )
+            .andExpect(method(HttpMethod.POST))
+            .andRespond(
+                withStatus(HttpStatus.OK)
+                    .contentType(MediaType.APPLICATION_PDF)
+                    .body("PDF bytes :)")
+            )
+
+        val jpostresponse = JournalpostResponse(dokumenter = emptyList(), journalpostId = "w234", journalpostferdigstilt = true)
+
+        dokarkivMockServer.expect(
+            once(),
+            requestTo(URI("http://dokarkiv/rest/journalpostapi/v1/journalpost?forsoekFerdigstill=true"))
+        )
+            .andExpect(method(HttpMethod.POST))
+            .andRespond(
+                withStatus(HttpStatus.OK)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(jpostresponse.serialisertTilString())
+            )
 
         val soknad = Reisetilskudd(
-                status = ReisetilskuddStatus.SENDT,
-                fnr = "12345600000",
-                reisetilskuddId = UUID.randomUUID().toString()
+            status = ReisetilskuddStatus.SENDT,
+            fnr = "12345600000",
+            reisetilskuddId = UUID.randomUUID().toString()
         )
 
         producer.send(ProducerRecord(FLEX_APEN_REISETILSKUDD_TOPIC, soknad.reisetilskuddId, soknad.serialisertTilString())).get()
@@ -90,11 +112,12 @@ class InnsendingIntegrationTest {
 
         assertThat(innsending.reisetilskuddId, `is`(soknad.reisetilskuddId))
         assertThat(innsending.fnr, `is`(soknad.fnr))
-        assertThat(innsending.journalpostId, `is`("TODO"))
+        assertThat(innsending.journalpostId, `is`(jpostresponse.journalpostId))
         assertThat(innsending.saksId, `is`("TODO"))
         assertThat(Instant.now().toEpochMilli() - innsending.opprettet.toEpochMilli(), lessThan(2000))
 
         mockServer.verify()
+        dokarkivMockServer.verify()
     }
 
     @Test
@@ -102,9 +125,9 @@ class InnsendingIntegrationTest {
         reisetilskuddConsumer.meldinger = 0
 
         val soknad = Reisetilskudd(
-                status = ReisetilskuddStatus.FREMTIDIG,
-                fnr = "12345600000",
-                reisetilskuddId = UUID.randomUUID().toString()
+            status = ReisetilskuddStatus.FREMTIDIG,
+            fnr = "12345600000",
+            reisetilskuddId = UUID.randomUUID().toString()
         )
 
         producer.send(ProducerRecord(FLEX_APEN_REISETILSKUDD_TOPIC, soknad.reisetilskuddId, soknad.serialisertTilString())).get()
@@ -116,25 +139,24 @@ class InnsendingIntegrationTest {
         assertThat(innsending, nullValue())
     }
 
-
     @Test
     fun `allerede SENDT søknad prosesseres ikke og lagres i databasen`() {
         reisetilskuddConsumer.meldinger = 0
 
         val eksisterendeInnsending = Innsending(
-                reisetilskuddId = UUID.randomUUID().toString(),
-                opprettet = Instant.now(),
-                journalpostId = "jpost12",
-                saksId = "sakem",
-                fnr = "12345600000",
+            reisetilskuddId = UUID.randomUUID().toString(),
+            opprettet = Instant.now(),
+            journalpostId = "jpost12",
+            saksId = "sakem",
+            fnr = "12345600000",
         )
 
         innsendingDao.lagreInnsending(eksisterendeInnsending)
 
         val soknad = Reisetilskudd(
-                status = ReisetilskuddStatus.SENDT,
-                fnr = eksisterendeInnsending.fnr,
-                reisetilskuddId = eksisterendeInnsending.reisetilskuddId,
+            status = ReisetilskuddStatus.SENDT,
+            fnr = eksisterendeInnsending.fnr,
+            reisetilskuddId = eksisterendeInnsending.reisetilskuddId,
         )
 
         producer.send(ProducerRecord(FLEX_APEN_REISETILSKUDD_TOPIC, soknad.reisetilskuddId, soknad.serialisertTilString())).get()
@@ -146,3 +168,5 @@ class InnsendingIntegrationTest {
         assertThat(innsending, `is`(eksisterendeInnsending))
     }
 }
+
+fun Any.serialisertTilString(): String = objectMapper.writeValueAsString(this)

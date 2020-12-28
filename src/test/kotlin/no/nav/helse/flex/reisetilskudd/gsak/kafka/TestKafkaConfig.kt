@@ -8,9 +8,8 @@ import org.springframework.context.annotation.Configuration
 @Configuration
 class TestKafkaConfig {
 
-
     @Bean
     fun kafkaProducer(properties: KafkaProperties): KafkaProducer<String, String> {
         return KafkaProducer(properties.buildProducerProperties())
-       }
+    }
 }

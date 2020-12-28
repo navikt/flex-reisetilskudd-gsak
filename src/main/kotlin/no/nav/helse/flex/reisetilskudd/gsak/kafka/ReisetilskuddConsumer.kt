@@ -2,9 +2,9 @@ package no.nav.helse.flex.reisetilskudd.gsak.kafka
 
 import no.nav.helse.flex.reisetilskudd.gsak.config.FLEX_APEN_REISETILSKUDD_TOPIC
 import no.nav.helse.flex.reisetilskudd.gsak.innsending.InnsendingService
+import no.nav.helse.flex.reisetilskudd.gsak.log
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.springframework.kafka.annotation.KafkaListener
-import no.nav.helse.flex.reisetilskudd.gsak.log
 import org.springframework.kafka.support.Acknowledgment
 import org.springframework.stereotype.Component
 
@@ -31,5 +31,3 @@ class ReisetilskuddConsumer(private val innsendingService: InnsendingService) {
         }
     }
 }
-
-

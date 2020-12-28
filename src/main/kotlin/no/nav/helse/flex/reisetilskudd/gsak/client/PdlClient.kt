@@ -15,20 +15,21 @@ import java.util.*
 
 @Component
 class PdlClient(
-        private val downstreamResourceRestTemplate: RestTemplate,
-        @Value("\${flex.fss.proxy.url}") private val flexFssProxyUrl: String) {
+    private val flexFssProxyRestTemplate: RestTemplate,
+    @Value("\${flex.fss.proxy.url}") private val flexFssProxyUrl: String
+) {
 
     private val TEMA = "Tema"
     private val TEMA_SYK = "SYK"
     private val IDENT = "ident"
     private val objectMapper = ObjectMapper()
-            .registerModule(JavaTimeModule())
-            .registerModule(KotlinModule())
-            .configure(DeserializationFeature.READ_UNKNOWN_ENUM_VALUES_USING_DEFAULT_VALUE, true)
-            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+        .registerModule(JavaTimeModule())
+        .registerModule(KotlinModule())
+        .configure(DeserializationFeature.READ_UNKNOWN_ENUM_VALUES_USING_DEFAULT_VALUE, true)
+        .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
 
     private val HENT_ADRESSEBESKYTTELSE_QUERY =
-            """
+        """
 query(${"$"}ident: ID!){
   hentPerson(ident: ${"$"}ident) {
     adressebeskyttelse {
@@ -43,10 +44,11 @@ query(${"$"}ident: ID!){
     fun hentAddressebeskyttelseGradering(fnr: String): String {
 
         val graphQLRequest = GraphQLRequest(
-                query = HENT_ADRESSEBESKYTTELSE_QUERY,
-                variables = Collections.singletonMap(IDENT, fnr))
+            query = HENT_ADRESSEBESKYTTELSE_QUERY,
+            variables = Collections.singletonMap(IDENT, fnr)
+        )
 
-        val responseEntity = downstreamResourceRestTemplate.exchange("$flexFssProxyUrl/api/pdl/graphql", HttpMethod.POST, HttpEntity(requestToJson(graphQLRequest), createHeaderWithTema()), String::class.java)
+        val responseEntity = flexFssProxyRestTemplate.exchange("$flexFssProxyUrl/api/pdl/graphql", HttpMethod.POST, HttpEntity(requestToJson(graphQLRequest), createHeaderWithTema()), String::class.java)
 
         if (responseEntity.statusCode != HttpStatus.OK) {
             throw RuntimeException("PDL svarer med status ${responseEntity.statusCode} - ${responseEntity.body}")
@@ -98,5 +100,4 @@ query(${"$"}ident: ID!){
     data class GraphQLRequest(val query: String, val variables: Map<String, String>)
 
     class FunctionalPdlError(message: String) : RuntimeException(message)
-
 }

@@ -4,10 +4,14 @@
   "team": "flex",
   "kafkaPool": "nav-prod",
   "externalHosts": [
-    "flex-fss-proxy.prod-fss-pub.nais.io"
+    "flex-fss-proxy.prod-fss-pub.nais.io",
+    "dokarkiv.prod-fss-pub.nais.io"
   ],
+  "azureTenant": "nav.no",
   "env": {
     "FLEX_FSS_PROXY_AAD_CLIENT_ID": "97abc02f-820c-4c6f-a25a-ec19ac7cae8c",
-    "FLEX_FSS_PROXY_URL": "https://flex-fss-proxy.prod-fss-pub.nais.io"
+    "FLEX_FSS_PROXY_URL": "https://flex-fss-proxy.prod-fss-pub.nais.io",
+    "DOKARKIV_AAD_CLIENT_ID": "162b3255-2f72-4399-8f7a-244add9ffaac",
+    "DOKARKIV_URL": "https://dokarkiv.prod-fss-pub.nais.io"
   }
 }
