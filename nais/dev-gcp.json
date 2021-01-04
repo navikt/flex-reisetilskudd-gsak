@@ -9,7 +9,7 @@
   ],
   "azureTenant": "trygdeetaten.no",
   "env": {
-    "FLEX_FSS_PROXY_AAD_CLIENT_ID": "e8d32a84-c233-4924-9c87-ab6855315a28",
+    "FLEX_FSS_PROXY_AAD_CLIENT_ID": "f6c76da0-2ce2-4810-be34-fb0e7baf2556",
     "FLEX_FSS_PROXY_URL": "https://flex-fss-proxy.dev-fss-pub.nais.io",
     "DOKARKIV_AAD_CLIENT_ID": "972814f3-8bdf-44f8-a191-c2ed00020b54",
     "DOKARKIV_URL": "https://dokarkiv.dev-fss-pub.nais.io"

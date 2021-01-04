@@ -1,4 +1,4 @@
-package no.nav.helse.flex.reisetilskudd.gsak.client
+package no.nav.helse.flex.reisetilskudd.gsak.client.pdl
 
 import com.fasterxml.jackson.core.JsonProcessingException
 import com.fasterxml.jackson.databind.DeserializationFeature
@@ -28,10 +28,15 @@ class PdlClient(
         .configure(DeserializationFeature.READ_UNKNOWN_ENUM_VALUES_USING_DEFAULT_VALUE, true)
         .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
 
-    private val HENT_ADRESSEBESKYTTELSE_QUERY =
+    private val HENT_PERSON_QUERY =
         """
 query(${"$"}ident: ID!){
   hentPerson(ident: ${"$"}ident) {
+  	navn(historikk: false) {
+  	  fornavn
+  	  mellomnavn
+  	  etternavn
+    }
     adressebeskyttelse {
       gradering
     }
@@ -40,11 +45,10 @@ query(${"$"}ident: ID!){
 """
 
     @Retryable(exclude = [FunctionalPdlError::class])
-    // TODO bytt til å hente navn
-    fun hentAddressebeskyttelseGradering(fnr: String): String {
+    fun hentPerson(fnr: String): HentPerson {
 
         val graphQLRequest = GraphQLRequest(
-            query = HENT_ADRESSEBESKYTTELSE_QUERY,
+            query = HENT_PERSON_QUERY,
             variables = Collections.singletonMap(IDENT, fnr)
         )
 
@@ -54,13 +58,12 @@ query(${"$"}ident: ID!){
             throw RuntimeException("PDL svarer med status ${responseEntity.statusCode} - ${responseEntity.body}")
         }
 
-        val parsedResponse: HentPersonAdressebeskyttelseResponse? = responseEntity.body?.let { objectMapper.readValue(it) }
+        val parsedResponse: GetPersonResponse? = responseEntity.body?.let { objectMapper.readValue(it) }
 
         parsedResponse?.data?.hentPerson?.let {
-            val adressebeskyttelse = it.adressebeskyttelse.firstOrNull() ?: HentPersonAdressebeskyttelseResponse.HentPersonAdressebeskyttelseData.HentPersonAdressebeskyttelse.Adressebeskyttelse(gradering = "UGRADERT")
-            return adressebeskyttelse.gradering
+            return it
         }
-        throw FunctionalPdlError("Fant ikke adressebeskyttelse, ingen body eller data. ${parsedResponse.hentErrors()}")
+        throw FunctionalPdlError("Fant ikke person, ingen body eller data. ${parsedResponse.hentErrors()}")
     }
 
     private fun createHeaderWithTema(): HttpHeaders {
@@ -83,18 +86,8 @@ query(${"$"}ident: ID!){
         }
     }
 
-    private fun HentPersonAdressebeskyttelseResponse?.hentErrors(): String? {
+    private fun GetPersonResponse?.hentErrors(): String? {
         return this?.errors?.map { it.message }?.joinToString(" - ")
-    }
-
-    data class Error(val message: String)
-
-    data class HentPersonAdressebeskyttelseResponse(val data: HentPersonAdressebeskyttelseData, val errors: List<Error>?) {
-        data class HentPersonAdressebeskyttelseData(val hentPerson: HentPersonAdressebeskyttelse?) {
-            data class HentPersonAdressebeskyttelse(val adressebeskyttelse: List<Adressebeskyttelse>) {
-                data class Adressebeskyttelse(val gradering: String)
-            }
-        }
     }
 
     data class GraphQLRequest(val query: String, val variables: Map<String, String>)

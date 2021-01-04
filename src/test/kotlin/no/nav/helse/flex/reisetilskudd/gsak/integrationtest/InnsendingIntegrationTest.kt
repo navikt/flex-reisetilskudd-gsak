@@ -1,5 +1,9 @@
 package no.nav.helse.flex.reisetilskudd.gsak.integrationtest
 
+import no.nav.helse.flex.reisetilskudd.gsak.client.pdl.GetPersonResponse
+import no.nav.helse.flex.reisetilskudd.gsak.client.pdl.HentPerson
+import no.nav.helse.flex.reisetilskudd.gsak.client.pdl.Navn
+import no.nav.helse.flex.reisetilskudd.gsak.client.pdl.ResponseData
 import no.nav.helse.flex.reisetilskudd.gsak.config.FLEX_APEN_REISETILSKUDD_TOPIC
 import no.nav.helse.flex.reisetilskudd.gsak.database.InnsendingDao
 import no.nav.helse.flex.reisetilskudd.gsak.domain.Innsending
@@ -28,8 +32,7 @@ import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.junit4.SpringRunner
 import org.springframework.test.web.client.ExpectedCount.once
 import org.springframework.test.web.client.MockRestServiceServer
-import org.springframework.test.web.client.match.MockRestRequestMatchers.method
-import org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo
+import org.springframework.test.web.client.match.MockRestRequestMatchers.*
 import org.springframework.test.web.client.response.MockRestResponseCreators.withStatus
 import org.springframework.web.client.RestTemplate
 import java.net.URI
@@ -61,29 +64,23 @@ class InnsendingIntegrationTest {
     @Autowired
     private lateinit var dokarkivRestTemplate: RestTemplate
 
-    private lateinit var mockServer: MockRestServiceServer
+    @Autowired
+    private lateinit var flexFssProxyRestTemplate: RestTemplate
+
+    private lateinit var flexFssProxyMockServer: MockRestServiceServer
+    private lateinit var pdfGenMockServer: MockRestServiceServer
     private lateinit var dokarkivMockServer: MockRestServiceServer
 
     @Before
     fun init() {
-        mockServer = MockRestServiceServer.createServer(simpleRestTemplate)
+        pdfGenMockServer = MockRestServiceServer.createServer(simpleRestTemplate)
         dokarkivMockServer = MockRestServiceServer.createServer(dokarkivRestTemplate)
+        flexFssProxyMockServer = MockRestServiceServer.createServer(flexFssProxyRestTemplate)
     }
 
     @Test
     fun `SENDT søknad prosesseres og lagres i databasen`() {
         reisetilskuddConsumer.meldinger = 0
-
-        mockServer.expect(
-            once(),
-            requestTo(URI("http://flex-reisetilskudd-pdfgen/api/v1/genpdf/reisetilskudd/reisetilskudd"))
-        )
-            .andExpect(method(HttpMethod.POST))
-            .andRespond(
-                withStatus(HttpStatus.OK)
-                    .contentType(MediaType.APPLICATION_PDF)
-                    .body("PDF bytes :)")
-            )
 
         val jpostresponse = JournalpostResponse(dokumenter = emptyList(), journalpostId = "w234", journalpostferdigstilt = true)
 
@@ -98,11 +95,41 @@ class InnsendingIntegrationTest {
                     .body(jpostresponse.serialisertTilString())
             )
 
+        val getPersonResponse = GetPersonResponse(
+            errors = emptyList(),
+            data = ResponseData(
+                hentPerson = HentPerson(navn = listOf(Navn(fornavn = "For", mellomnavn = "Midt", etternavn = "Efter")))
+            )
+        )
+
+        flexFssProxyMockServer.expect(
+            once(),
+            requestTo(URI("http://flex-fss-proxy/api/pdl/graphql"))
+        )
+            .andExpect(method(HttpMethod.POST))
+            .andRespond(
+                withStatus(HttpStatus.OK)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(getPersonResponse.serialisertTilString())
+            )
         val soknad = Reisetilskudd(
             status = ReisetilskuddStatus.SENDT,
             fnr = "12345600000",
             reisetilskuddId = UUID.randomUUID().toString()
         )
+
+        pdfGenMockServer.expect(
+            once(),
+            requestTo(URI("http://flex-reisetilskudd-pdfgen/api/v1/genpdf/reisetilskudd/reisetilskudd"))
+        )
+            .andExpect(method(HttpMethod.POST))
+            .andExpect(jsonPath("$.navn", `is`("For Midt Efter")))
+            .andExpect(jsonPath("$.reisetilskuddId", `is`(soknad.reisetilskuddId)))
+            .andRespond(
+                withStatus(HttpStatus.OK)
+                    .contentType(MediaType.APPLICATION_PDF)
+                    .body("PDF bytes :)")
+            )
 
         producer.send(ProducerRecord(FLEX_APEN_REISETILSKUDD_TOPIC, soknad.reisetilskuddId, soknad.serialisertTilString())).get()
 
@@ -116,7 +143,7 @@ class InnsendingIntegrationTest {
         assertThat(innsending.saksId, `is`("TODO"))
         assertThat(Instant.now().toEpochMilli() - innsending.opprettet.toEpochMilli(), lessThan(2000))
 
-        mockServer.verify()
+        pdfGenMockServer.verify()
         dokarkivMockServer.verify()
     }
 
