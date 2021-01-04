@@ -2,6 +2,8 @@ package no.nav.helse.flex.reisetilskudd.gsak.innsending
 
 import no.nav.helse.flex.reisetilskudd.gsak.client.DokArkivClient
 import no.nav.helse.flex.reisetilskudd.gsak.client.PdfGeneratorClient
+import no.nav.helse.flex.reisetilskudd.gsak.client.pdl.PdlClient
+import no.nav.helse.flex.reisetilskudd.gsak.client.pdl.format
 import no.nav.helse.flex.reisetilskudd.gsak.database.InnsendingDao
 import no.nav.helse.flex.reisetilskudd.gsak.domain.*
 import no.nav.helse.flex.reisetilskudd.gsak.log
@@ -13,6 +15,7 @@ class InnsendingService(
     private val innsendingDao: InnsendingDao,
     private val pdfGeneratorClient: PdfGeneratorClient,
     private val dokArkivClient: DokArkivClient,
+    private val pdlClient: PdlClient,
 ) {
 
     private val log = log()
@@ -29,9 +32,12 @@ class InnsendingService(
             return
         }
 
+        val navn = pdlClient.hentPerson(fnr = reisetilskudd.fnr).navn?.firstOrNull()?.format()
+            ?: throw RuntimeException("Fant ikke navn i PDL")
+
         val pdf = pdfGeneratorClient.genererPdf(
             PdfRequest(
-                navn = "Navn Navnesen Fra Pdl",
+                navn = navn,
                 reisetilskuddId = reisetilskudd.reisetilskuddId
             )
         )
