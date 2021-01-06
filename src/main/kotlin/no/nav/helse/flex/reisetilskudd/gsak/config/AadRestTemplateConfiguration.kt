@@ -46,6 +46,19 @@ class AadRestTemplateConfiguration {
             oAuth2AccessTokenService = oAuth2AccessTokenService,
         )
 
+    @Bean
+    fun flexBucketUploaderRestTemplate(
+        restTemplateBuilder: RestTemplateBuilder,
+        clientConfigurationProperties: ClientConfigurationProperties,
+        oAuth2AccessTokenService: OAuth2AccessTokenService
+    ): RestTemplate =
+        downstreamRestTemplate(
+            registrationName = "flex-bucket-uploader-client-credentials",
+            restTemplateBuilder = restTemplateBuilder,
+            clientConfigurationProperties = clientConfigurationProperties,
+            oAuth2AccessTokenService = oAuth2AccessTokenService,
+        )
+
     private fun downstreamRestTemplate(
         restTemplateBuilder: RestTemplateBuilder,
         clientConfigurationProperties: ClientConfigurationProperties,
