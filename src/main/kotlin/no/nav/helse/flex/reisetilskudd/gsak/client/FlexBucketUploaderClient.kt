@@ -10,7 +10,7 @@ import org.springframework.web.client.RestTemplate
 @Controller
 class FlexBucketUploaderClient(
     private val flexBucketUploaderRestTemplate: RestTemplate,
-    @Value("\${flex.bucket.uploader.url}") private val flexBucketUploaderUrl: String
+    @Value("\${flex.bucket.uploader.url:http://flex-bucket-uploader}") private val flexBucketUploaderUrl: String
 ) {
 
     @Retryable(backoff = Backoff(delay = 5000))
