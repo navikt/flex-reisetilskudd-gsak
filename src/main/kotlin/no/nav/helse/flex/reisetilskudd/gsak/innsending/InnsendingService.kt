@@ -81,4 +81,3 @@ fun Kvittering.tilPdfKvittering(bucket: FlexBucketUploaderClient, encoder: Base6
         this.belop,
         this.transportmiddel,
     )
-
