@@ -6,10 +6,7 @@ import no.nav.helse.flex.reisetilskudd.gsak.client.pdl.Navn
 import no.nav.helse.flex.reisetilskudd.gsak.client.pdl.ResponseData
 import no.nav.helse.flex.reisetilskudd.gsak.config.FLEX_APEN_REISETILSKUDD_TOPIC
 import no.nav.helse.flex.reisetilskudd.gsak.database.InnsendingDao
-import no.nav.helse.flex.reisetilskudd.gsak.domain.Innsending
-import no.nav.helse.flex.reisetilskudd.gsak.domain.JournalpostResponse
-import no.nav.helse.flex.reisetilskudd.gsak.domain.Reisetilskudd
-import no.nav.helse.flex.reisetilskudd.gsak.domain.ReisetilskuddStatus
+import no.nav.helse.flex.reisetilskudd.gsak.domain.*
 import no.nav.helse.flex.reisetilskudd.gsak.kafka.ReisetilskuddConsumer
 import no.nav.helse.flex.reisetilskudd.gsak.objectMapper
 import org.apache.kafka.clients.producer.KafkaProducer
@@ -37,9 +34,11 @@ import org.springframework.test.web.client.response.MockRestResponseCreators.wit
 import org.springframework.web.client.RestTemplate
 import java.net.URI
 import java.time.Instant
+import java.time.LocalDate
 import java.util.*
 import java.util.concurrent.TimeUnit
 
+@ExperimentalUnsignedTypes
 @SpringBootTest
 @DirtiesContext
 @EmbeddedKafka(
@@ -67,15 +66,20 @@ class InnsendingIntegrationTest {
     @Autowired
     private lateinit var flexFssProxyRestTemplate: RestTemplate
 
+    @Autowired
+    private lateinit var flexBucketUploaderRestTemplate: RestTemplate
+
     private lateinit var flexFssProxyMockServer: MockRestServiceServer
     private lateinit var pdfGenMockServer: MockRestServiceServer
     private lateinit var dokarkivMockServer: MockRestServiceServer
+    private lateinit var flexBucketUploaderMockServer: MockRestServiceServer
 
     @Before
     fun init() {
         pdfGenMockServer = MockRestServiceServer.createServer(simpleRestTemplate)
         dokarkivMockServer = MockRestServiceServer.createServer(dokarkivRestTemplate)
         flexFssProxyMockServer = MockRestServiceServer.createServer(flexFssProxyRestTemplate)
+        flexBucketUploaderMockServer = MockRestServiceServer.createServer(flexBucketUploaderRestTemplate)
     }
 
     @Test
@@ -112,10 +116,21 @@ class InnsendingIntegrationTest {
                     .contentType(MediaType.APPLICATION_JSON)
                     .body(getPersonResponse.serialisertTilString())
             )
+
+        val kvittering = Kvittering(
+            kvitteringId = "abc",
+            blobId = "1234",
+            navn = "hva",
+            datoForReise = LocalDate.of(2020, 12, 24),
+            storrelse = 123L,
+            belop = 10000,
+            transportmiddel = Transportmiddel.EGEN_BIL
+        )
         val soknad = Reisetilskudd(
             status = ReisetilskuddStatus.SENDT,
             fnr = "12345600000",
-            reisetilskuddId = UUID.randomUUID().toString()
+            reisetilskuddId = UUID.randomUUID().toString(),
+            kvitteringer = listOf(kvittering)
         )
 
         pdfGenMockServer.expect(
@@ -125,10 +140,22 @@ class InnsendingIntegrationTest {
             .andExpect(method(HttpMethod.POST))
             .andExpect(jsonPath("$.navn", `is`("For Midt Efter")))
             .andExpect(jsonPath("$.reisetilskuddId", `is`(soknad.reisetilskuddId)))
+            .andExpect(jsonPath("$.kvitteringer[0].kvitteringId", `is`(kvittering.kvitteringId)))
             .andRespond(
                 withStatus(HttpStatus.OK)
                     .contentType(MediaType.APPLICATION_PDF)
                     .body("PDF bytes :)")
+            )
+
+        flexBucketUploaderMockServer.expect(
+            once(),
+            requestTo(URI("http://flex-bucket-uploader/maskin/kvittering/${kvittering.blobId}"))
+        )
+            .andExpect(method(HttpMethod.GET))
+            .andRespond(
+                withStatus(HttpStatus.OK)
+                    .contentType(MediaType.IMAGE_JPEG)
+                    .body(legitJpg())
             )
 
         producer.send(ProducerRecord(FLEX_APEN_REISETILSKUDD_TOPIC, soknad.reisetilskuddId, soknad.serialisertTilString())).get()
@@ -197,3 +224,19 @@ class InnsendingIntegrationTest {
 }
 
 fun Any.serialisertTilString(): String = objectMapper.writeValueAsString(this)
+
+// http://web.archive.org/web/20111224041840/http://www.techsupportteam.org/forum/digital-imaging-photography/1892-worlds-smallest-valid-jpeg.html
+@ExperimentalUnsignedTypes
+fun legitJpg() = ubyteArrayOf(
+    0xFFu, 0xD8u, 0xFFu, 0xE0u, 0x00u, 0x10u, 0x4Au, 0x46u, 0x49u, 0x46u, 0x00u, 0x01u,
+    0x01u, 0x01u, 0x00u, 0x48u, 0x00u, 0x48u, 0x00u, 0x00u, 0xFFu, 0xDBu, 0x00u, 0x43u,
+    0x00u, 0xFFu, 0xFFu, 0xFFu, 0xFFu, 0xFFu, 0xFFu, 0xFFu, 0xFFu, 0xFFu, 0xFFu, 0xFFu,
+    0xFFu, 0xFFu, 0xFFu, 0xFFu, 0xFFu, 0xFFu, 0xFFu, 0xFFu, 0xFFu, 0xFFu, 0xFFu, 0xFFu,
+    0xFFu, 0xFFu, 0xFFu, 0xFFu, 0xFFu, 0xFFu, 0xFFu, 0xFFu, 0xFFu, 0xFFu, 0xFFu, 0xFFu,
+    0xFFu, 0xFFu, 0xFFu, 0xFFu, 0xFFu, 0xFFu, 0xFFu, 0xFFu, 0xFFu, 0xFFu, 0xFFu, 0xFFu,
+    0xFFu, 0xFFu, 0xFFu, 0xFFu, 0xFFu, 0xFFu, 0xFFu, 0xFFu, 0xFFu, 0xFFu, 0xFFu, 0xFFu,
+    0xFFu, 0xFFu, 0xFFu, 0xFFu, 0xFFu, 0xFFu, 0xC2u, 0x00u, 0x0Bu, 0x08u, 0x00u, 0x01u,
+    0x00u, 0x01u, 0x01u, 0x01u, 0x11u, 0x00u, 0xFFu, 0xC4u, 0x00u, 0x14u, 0x10u, 0x01u,
+    0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u,
+    0x00u, 0x00u, 0x00u, 0x00u, 0xFFu, 0xDAu, 0x00u, 0x08u, 0x01u, 0x01u, 0x00u, 0x01u,
+    0x3Fu, 0x10u).toByteArray()

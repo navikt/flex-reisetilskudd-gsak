@@ -40,7 +40,7 @@ class InnsendingService(
 
         val encoder = Base64.getEncoder()
 
-        val vedlegg = reisetilskudd.kvitteringer.map {
+        val kvitteringer = reisetilskudd.kvitteringer.map {
             it.tilPdfKvittering(bucketUploaderClient, encoder)
         }
 
@@ -48,7 +48,7 @@ class InnsendingService(
             PdfRequest(
                 navn = navn,
                 reisetilskuddId = reisetilskudd.reisetilskuddId,
-                kvitteringer = vedlegg
+                kvitteringer = kvitteringer
             )
         )
 
@@ -72,12 +72,12 @@ class InnsendingService(
 
 fun Kvittering.tilPdfKvittering(bucket: FlexBucketUploaderClient, encoder: Base64.Encoder) =
     PdfKvittering(
-        encoder.encodeToString(bucket.hentVedlegg(this.kvitteringId)),
+        encoder.encodeToString(bucket.hentVedlegg(this.blobId)),
         this.kvitteringId,
+        this.blobId,
         this.navn,
-        this.fom,
-        this.tom,
+        this.datoForReise,
         this.storrelse,
         this.belop,
-        this.transportmiddel,
+        this.transportmiddel
     )

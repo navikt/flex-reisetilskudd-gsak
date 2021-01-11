@@ -10,11 +10,11 @@ data class PdfRequest(
 
 data class PdfKvittering(
     val b64data: String,
-    val kvitteringId: String,
+    val kvitteringId: String? = null,
+    val blobId: String,
     val navn: String,
-    val fom: LocalDate,
-    val tom: LocalDate?,
+    val datoForReise: LocalDate,
     val storrelse: Long,
-    val belop: Double,
+    val belop: Int, // Beløp i øre . 100kr = 10000
     val transportmiddel: Transportmiddel
 )
