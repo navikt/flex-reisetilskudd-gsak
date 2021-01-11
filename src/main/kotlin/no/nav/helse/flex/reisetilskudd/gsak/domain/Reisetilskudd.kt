@@ -12,7 +12,7 @@ data class Reisetilskudd(
 )
 
 enum class ReisetilskuddStatus {
-    FREMTIDIG, ÅPEN, SENDT
+    FREMTIDIG, ÅPEN, SENDBAR, SENDT, AVBRUTT
 }
 
 enum class Transportmiddel {
