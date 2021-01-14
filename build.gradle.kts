@@ -60,7 +60,7 @@ dependencies {
     testImplementation("com.h2database:h2")
     testImplementation("org.awaitility:awaitility")
     testImplementation("org.hamcrest:hamcrest-library")
-    testImplementation("org.scala-lang:scala-library:2.12.11")
+    testImplementation("org.scala-lang:scala-library:2.13.4")
 }
 
 tasks.getByName<org.springframework.boot.gradle.tasks.bundling.BootJar>("bootJar") {
