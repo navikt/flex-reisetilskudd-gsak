@@ -49,7 +49,7 @@ dependencies {
     implementation("org.aspectj:aspectjweaver")
     implementation("org.hibernate.validator:hibernate-validator")
     implementation("org.springframework.boot:spring-boot-starter-logging")
-    implementation("net.logstash.logback:logstash-logback-encoder:4.10")
+    implementation("net.logstash.logback:logstash-logback-encoder:6.6")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
     implementation("org.springframework.retry:spring-retry")
 
