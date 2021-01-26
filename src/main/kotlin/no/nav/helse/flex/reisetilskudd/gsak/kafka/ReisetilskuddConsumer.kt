@@ -3,13 +3,19 @@ package no.nav.helse.flex.reisetilskudd.gsak.kafka
 import no.nav.helse.flex.reisetilskudd.gsak.config.FLEX_APEN_REISETILSKUDD_TOPIC
 import no.nav.helse.flex.reisetilskudd.gsak.innsending.InnsendingService
 import no.nav.helse.flex.reisetilskudd.gsak.log
+import no.nav.helse.flex.reisetilskudd.gsak.selvtest.ApplicationState
 import org.apache.kafka.clients.consumer.ConsumerRecord
+import org.springframework.context.event.EventListener
 import org.springframework.kafka.annotation.KafkaListener
+import org.springframework.kafka.event.ConsumerStoppedEvent
 import org.springframework.kafka.support.Acknowledgment
 import org.springframework.stereotype.Component
 
 @Component
-class ReisetilskuddConsumer(private val innsendingService: InnsendingService) {
+class ReisetilskuddConsumer(
+    private val innsendingService: InnsendingService,
+    private val applicationState: ApplicationState
+) {
 
     private val log = log()
 
@@ -29,5 +35,11 @@ class ReisetilskuddConsumer(private val innsendingService: InnsendingService) {
         } finally {
             meldinger++
         }
+    }
+
+    @EventListener
+    fun eventHandler(event: ConsumerStoppedEvent) {
+        log.warn("Consumer stoppet grunnet ${event.reason}, restarter app")
+        applicationState.iAmDead()
     }
 }

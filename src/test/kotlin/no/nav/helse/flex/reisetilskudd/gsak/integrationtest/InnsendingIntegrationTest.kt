@@ -16,9 +16,9 @@ import org.hamcrest.CoreMatchers.`is`
 import org.hamcrest.CoreMatchers.nullValue
 import org.hamcrest.MatcherAssert.assertThat
 import org.hamcrest.Matchers.lessThan
-import org.junit.Before
-import org.junit.Test
-import org.junit.runner.RunWith
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.http.HttpMethod
@@ -26,7 +26,7 @@ import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.kafka.test.context.EmbeddedKafka
 import org.springframework.test.annotation.DirtiesContext
-import org.springframework.test.context.junit4.SpringRunner
+import org.springframework.test.context.junit.jupiter.SpringExtension
 import org.springframework.test.web.client.ExpectedCount.once
 import org.springframework.test.web.client.MockRestServiceServer
 import org.springframework.test.web.client.match.MockRestRequestMatchers.*
@@ -45,7 +45,7 @@ import java.util.concurrent.TimeUnit
     partitions = 1,
     topics = [FLEX_APEN_REISETILSKUDD_TOPIC]
 )
-@RunWith(SpringRunner::class)
+@ExtendWith(SpringExtension::class)
 class InnsendingIntegrationTest {
 
     @Autowired
@@ -74,7 +74,7 @@ class InnsendingIntegrationTest {
     private lateinit var dokarkivMockServer: MockRestServiceServer
     private lateinit var flexBucketUploaderMockServer: MockRestServiceServer
 
-    @Before
+    @BeforeEach
     fun init() {
         pdfGenMockServer = MockRestServiceServer.createServer(simpleRestTemplate)
         dokarkivMockServer = MockRestServiceServer.createServer(dokarkivRestTemplate)
