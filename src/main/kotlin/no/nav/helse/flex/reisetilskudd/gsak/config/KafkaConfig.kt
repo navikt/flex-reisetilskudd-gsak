@@ -8,7 +8,6 @@ import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory
 import org.springframework.kafka.core.ConsumerFactory
 import org.springframework.kafka.core.DefaultKafkaConsumerFactory
 import org.springframework.kafka.listener.ContainerProperties
-import java.time.Duration
 
 @EnableKafka
 @Configuration
@@ -24,7 +23,6 @@ class KafkaConfig {
         val factory = ConcurrentKafkaListenerContainerFactory<String, String>()
         factory.consumerFactory = consumerFactory
         factory.containerProperties.ackMode = ContainerProperties.AckMode.MANUAL_IMMEDIATE
-        factory.containerProperties.authorizationExceptionRetryInterval = Duration.ofSeconds(2)
         return factory
     }
 }

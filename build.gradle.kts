@@ -1,7 +1,7 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-    id("org.springframework.boot") version "2.3.5.RELEASE"
+    id("org.springframework.boot") version "2.4.2"
     id("io.spring.dependency-management") version "1.0.11.RELEASE"
     kotlin("jvm") version "1.4.21"
     kotlin("plugin.spring") version "1.4.21"
@@ -60,7 +60,6 @@ dependencies {
     testImplementation("com.h2database:h2")
     testImplementation("org.awaitility:awaitility")
     testImplementation("org.hamcrest:hamcrest-library")
-    testImplementation("org.scala-lang:scala-library:2.12.11")
 }
 
 tasks.getByName<org.springframework.boot.gradle.tasks.bundling.BootJar>("bootJar") {
