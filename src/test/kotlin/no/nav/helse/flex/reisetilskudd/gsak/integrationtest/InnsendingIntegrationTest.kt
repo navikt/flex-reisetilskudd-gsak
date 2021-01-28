@@ -1,5 +1,7 @@
 package no.nav.helse.flex.reisetilskudd.gsak.integrationtest
 
+import no.nav.helse.flex.reisetilskudd.gsak.KafkaContainerWithProps
+import no.nav.helse.flex.reisetilskudd.gsak.PostgreSQLContainerWithProps
 import no.nav.helse.flex.reisetilskudd.gsak.client.pdl.GetPersonResponse
 import no.nav.helse.flex.reisetilskudd.gsak.client.pdl.HentPerson
 import no.nav.helse.flex.reisetilskudd.gsak.client.pdl.Navn
@@ -24,7 +26,6 @@ import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.http.HttpMethod
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
-import org.springframework.kafka.test.context.EmbeddedKafka
 import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.junit.jupiter.SpringExtension
 import org.springframework.test.web.client.ExpectedCount.once
@@ -32,6 +33,8 @@ import org.springframework.test.web.client.MockRestServiceServer
 import org.springframework.test.web.client.match.MockRestRequestMatchers.*
 import org.springframework.test.web.client.response.MockRestResponseCreators.withStatus
 import org.springframework.web.client.RestTemplate
+import org.testcontainers.junit.jupiter.Container
+import org.testcontainers.junit.jupiter.Testcontainers
 import java.net.URI
 import java.time.Instant
 import java.time.LocalDate
@@ -40,13 +43,18 @@ import java.util.concurrent.TimeUnit
 
 @ExperimentalUnsignedTypes
 @SpringBootTest
-@DirtiesContext
-@EmbeddedKafka(
-    partitions = 1,
-    topics = [FLEX_APEN_REISETILSKUDD_TOPIC]
-)
 @ExtendWith(SpringExtension::class)
+@Testcontainers
+@DirtiesContext
 class InnsendingIntegrationTest {
+
+    companion object {
+        @Container
+        val postgreSQLContainer = PostgreSQLContainerWithProps()
+
+        @Container
+        val kafkaContainer = KafkaContainerWithProps()
+    }
 
     @Autowired
     private lateinit var producer: KafkaProducer<String, String>

@@ -45,10 +45,5 @@ spring:
       max-poll-records: 1
       auto-offset-reset: earliest #TODO sett til none når offsett er etablert i prod
       enable-auto-commit: false
-  datasource:
-    url: jdbc:h2:mem:db;DB_CLOSE_DELAY=-1
-    username: sa
-    password: sa
-    driver-class-name: org.h2.Driver
 
 dokarkiv.url: "http://dokarkiv"
