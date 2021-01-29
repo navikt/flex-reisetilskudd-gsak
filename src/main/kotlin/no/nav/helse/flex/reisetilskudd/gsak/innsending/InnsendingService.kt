@@ -5,7 +5,7 @@ import no.nav.helse.flex.reisetilskudd.gsak.client.FlexBucketUploaderClient
 import no.nav.helse.flex.reisetilskudd.gsak.client.PdfGeneratorClient
 import no.nav.helse.flex.reisetilskudd.gsak.client.pdl.PdlClient
 import no.nav.helse.flex.reisetilskudd.gsak.client.pdl.format
-import no.nav.helse.flex.reisetilskudd.gsak.database.InnsendingDao
+import no.nav.helse.flex.reisetilskudd.gsak.database.InnsendingRepository
 import no.nav.helse.flex.reisetilskudd.gsak.domain.*
 import no.nav.helse.flex.reisetilskudd.gsak.log
 import org.springframework.stereotype.Component
@@ -14,7 +14,7 @@ import java.util.*
 
 @Component
 class InnsendingService(
-    private val innsendingDao: InnsendingDao,
+    private val innsendingRepository: InnsendingRepository,
     private val pdfGeneratorClient: PdfGeneratorClient,
     private val dokArkivClient: DokArkivClient,
     private val pdlClient: PdlClient,
@@ -30,7 +30,7 @@ class InnsendingService(
             return
         }
 
-        innsendingDao.hentInnsending(reisetilskudd.reisetilskuddId)?.let {
+        innsendingRepository.findInnsendingByReisetilskuddId(reisetilskudd.reisetilskuddId)?.let {
             log.warn("Har allerede behandlet reisetilskuddsøknad ${it.reisetilskuddId} ${it.opprettet}")
             return
         }
@@ -64,7 +64,7 @@ class InnsendingService(
             opprettet = Instant.now(),
         )
 
-        innsendingDao.lagreInnsending(innsending)
+        innsendingRepository.save(innsending)
 
         log.info("Behandlet reisetilskuddsøknad ${reisetilskudd.reisetilskuddId} og status ${reisetilskudd.status}")
     }

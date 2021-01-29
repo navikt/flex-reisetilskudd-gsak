@@ -7,7 +7,7 @@ import no.nav.helse.flex.reisetilskudd.gsak.client.pdl.HentPerson
 import no.nav.helse.flex.reisetilskudd.gsak.client.pdl.Navn
 import no.nav.helse.flex.reisetilskudd.gsak.client.pdl.ResponseData
 import no.nav.helse.flex.reisetilskudd.gsak.config.FLEX_APEN_REISETILSKUDD_TOPIC
-import no.nav.helse.flex.reisetilskudd.gsak.database.InnsendingDao
+import no.nav.helse.flex.reisetilskudd.gsak.database.InnsendingRepository
 import no.nav.helse.flex.reisetilskudd.gsak.domain.*
 import no.nav.helse.flex.reisetilskudd.gsak.kafka.ReisetilskuddConsumer
 import no.nav.helse.flex.reisetilskudd.gsak.objectMapper
@@ -63,7 +63,7 @@ class InnsendingIntegrationTest {
     private lateinit var reisetilskuddConsumer: ReisetilskuddConsumer
 
     @Autowired
-    private lateinit var innsendingDao: InnsendingDao
+    private lateinit var innsendingRepository: InnsendingRepository
 
     @Autowired
     private lateinit var simpleRestTemplate: RestTemplate
@@ -171,7 +171,7 @@ class InnsendingIntegrationTest {
 
         await().atMost(3, TimeUnit.SECONDS).until { reisetilskuddConsumer.meldinger == 1 }
 
-        val innsending = innsendingDao.hentInnsending(soknad.reisetilskuddId)!!
+        val innsending = innsendingRepository.findInnsendingByReisetilskuddId(soknad.reisetilskuddId)!!
 
         assertThat(innsending.reisetilskuddId, `is`(soknad.reisetilskuddId))
         assertThat(innsending.fnr, `is`(soknad.fnr))
@@ -198,7 +198,7 @@ class InnsendingIntegrationTest {
 
         await().atMost(3, TimeUnit.SECONDS).until { reisetilskuddConsumer.meldinger == 1 }
 
-        val innsending = innsendingDao.hentInnsending(soknad.reisetilskuddId)
+        val innsending = innsendingRepository.findInnsendingByReisetilskuddId(soknad.reisetilskuddId)
 
         assertThat(innsending, nullValue())
     }
@@ -215,7 +215,7 @@ class InnsendingIntegrationTest {
             fnr = "12345600000",
         )
 
-        innsendingDao.lagreInnsending(eksisterendeInnsending)
+        innsendingRepository.save(eksisterendeInnsending)
 
         val soknad = Reisetilskudd(
             status = ReisetilskuddStatus.SENDT,
@@ -227,9 +227,9 @@ class InnsendingIntegrationTest {
 
         await().atMost(3, TimeUnit.SECONDS).until { reisetilskuddConsumer.meldinger == 1 }
 
-        val innsending = innsendingDao.hentInnsending(soknad.reisetilskuddId)!!
+        val innsending = innsendingRepository.findInnsendingByReisetilskuddId(soknad.reisetilskuddId)!!
 
-        assertThat(innsending, `is`(eksisterendeInnsending))
+        assertThat(innsending, `is`(eksisterendeInnsending.copy(id = innsending.id)))
     }
 }
 
