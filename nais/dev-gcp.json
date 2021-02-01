@@ -5,7 +5,8 @@
   "kafkaPool": "nav-dev",
   "externalHosts": [
     "flex-fss-proxy.dev-fss-pub.nais.io",
-    "dokarkiv.dev-fss-pub.nais.io"
+    "dokarkiv.dev-fss-pub.nais.io",
+    "oppgave-q1.dev-fss-pub.nais.io"
   ],
   "azureTenant": "trygdeetaten.no",
   "env": {
@@ -13,6 +14,8 @@
     "FLEX_FSS_PROXY_URL": "https://flex-fss-proxy.dev-fss-pub.nais.io",
     "DOKARKIV_AAD_CLIENT_ID": "972814f3-8bdf-44f8-a191-c2ed00020b54",
     "DOKARKIV_URL": "https://dokarkiv.dev-fss-pub.nais.io",
-    "BUCKET_UPLOADER_URL": "http://flex-bucket-uploader"
+    "BUCKET_UPLOADER_URL": "http://flex-bucket-uploader",
+    "OPPGAVE_URL": "https://oppgave-q1.dev-fss-pub.nais.io",
+    "OPPGAVE_AAD_CLIENT_ID": "bef7cd4d-e65e-41f8-a743-b643e81f2aea"
   }
 }

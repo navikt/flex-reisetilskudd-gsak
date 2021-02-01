@@ -2,10 +2,7 @@ package no.nav.helse.flex.reisetilskudd.gsak.integrationtest
 
 import no.nav.helse.flex.reisetilskudd.gsak.KafkaContainerWithProps
 import no.nav.helse.flex.reisetilskudd.gsak.PostgreSQLContainerWithProps
-import no.nav.helse.flex.reisetilskudd.gsak.client.pdl.GetPersonResponse
-import no.nav.helse.flex.reisetilskudd.gsak.client.pdl.HentPerson
-import no.nav.helse.flex.reisetilskudd.gsak.client.pdl.Navn
-import no.nav.helse.flex.reisetilskudd.gsak.client.pdl.ResponseData
+import no.nav.helse.flex.reisetilskudd.gsak.client.pdl.*
 import no.nav.helse.flex.reisetilskudd.gsak.config.FLEX_APEN_REISETILSKUDD_TOPIC
 import no.nav.helse.flex.reisetilskudd.gsak.database.InnsendingRepository
 import no.nav.helse.flex.reisetilskudd.gsak.domain.*
@@ -28,6 +25,7 @@ import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.junit.jupiter.SpringExtension
+import org.springframework.test.web.client.ExpectedCount.manyTimes
 import org.springframework.test.web.client.ExpectedCount.once
 import org.springframework.test.web.client.MockRestServiceServer
 import org.springframework.test.web.client.match.MockRestRequestMatchers.*
@@ -72,6 +70,9 @@ class InnsendingIntegrationTest {
     private lateinit var dokarkivRestTemplate: RestTemplate
 
     @Autowired
+    private lateinit var oppgaveRestTemplate: RestTemplate
+
+    @Autowired
     private lateinit var flexFssProxyRestTemplate: RestTemplate
 
     @Autowired
@@ -80,12 +81,14 @@ class InnsendingIntegrationTest {
     private lateinit var flexFssProxyMockServer: MockRestServiceServer
     private lateinit var pdfGenMockServer: MockRestServiceServer
     private lateinit var dokarkivMockServer: MockRestServiceServer
+    private lateinit var oppgaveMockServer: MockRestServiceServer
     private lateinit var flexBucketUploaderMockServer: MockRestServiceServer
 
     @BeforeEach
     fun init() {
         pdfGenMockServer = MockRestServiceServer.createServer(simpleRestTemplate)
         dokarkivMockServer = MockRestServiceServer.createServer(dokarkivRestTemplate)
+        oppgaveMockServer = MockRestServiceServer.createServer(oppgaveRestTemplate)
         flexFssProxyMockServer = MockRestServiceServer.createServer(flexFssProxyRestTemplate)
         flexBucketUploaderMockServer = MockRestServiceServer.createServer(flexBucketUploaderRestTemplate)
     }
@@ -110,7 +113,8 @@ class InnsendingIntegrationTest {
         val getPersonResponse = GetPersonResponse(
             errors = emptyList(),
             data = ResponseData(
-                hentPerson = HentPerson(navn = listOf(Navn(fornavn = "For", mellomnavn = "Midt", etternavn = "Efter")))
+                hentPerson = HentPerson(navn = listOf(Navn(fornavn = "For", mellomnavn = "Midt", etternavn = "Efter"))),
+                hentIdenter = HentIdenter(listOf(PdlIdent(gruppe = AKTORID, "aktorid123")))
             )
         )
 
@@ -138,7 +142,9 @@ class InnsendingIntegrationTest {
             status = ReisetilskuddStatus.SENDT,
             fnr = "12345600000",
             reisetilskuddId = UUID.randomUUID().toString(),
-            kvitteringer = listOf(kvittering)
+            kvitteringer = listOf(kvittering),
+            fom = LocalDate.now(),
+            tom = LocalDate.now(),
         )
 
         pdfGenMockServer.expect(
@@ -167,6 +173,18 @@ class InnsendingIntegrationTest {
                     .body(ubyteArrayOf(0xDEu, 0xADu, 0xBEu, 0xEFu).toByteArray())
             )
 
+        val oppgaveResponse = OppgaveResponse(id = 1234)
+        oppgaveMockServer.expect(
+            once(),
+            requestTo(URI("http://oppgave/api/v1/oppgaver"))
+        )
+            .andExpect(method(HttpMethod.POST))
+            .andRespond(
+                withStatus(HttpStatus.OK)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(oppgaveResponse.serialisertTilString())
+            )
+
         producer.send(ProducerRecord(FLEX_APEN_REISETILSKUDD_TOPIC, soknad.reisetilskuddId, soknad.serialisertTilString())).get()
 
         await().atMost(3, TimeUnit.SECONDS).until { reisetilskuddConsumer.meldinger == 1 }
@@ -176,12 +194,201 @@ class InnsendingIntegrationTest {
         assertThat(innsending.reisetilskuddId, `is`(soknad.reisetilskuddId))
         assertThat(innsending.fnr, `is`(soknad.fnr))
         assertThat(innsending.journalpostId, `is`(jpostresponse.journalpostId))
-        assertThat(innsending.saksId, `is`("TODO"))
+        assertThat(innsending.oppgaveId, `is`(1234))
         assertThat(Instant.now().toEpochMilli() - innsending.opprettet.toEpochMilli(), lessThan(2000))
 
         pdfGenMockServer.verify()
         flexBucketUploaderMockServer.verify()
         dokarkivMockServer.verify()
+        oppgaveMockServer.verify()
+    }
+
+    @Test
+    @DirtiesContext
+    fun `SENDT søknad hvor oppgave opprettelse feiler lagres i databasen med journalpost men uten oppgave id`() {
+        reisetilskuddConsumer.meldinger = 0
+
+        val jpostresponse = JournalpostResponse(dokumenter = emptyList(), journalpostId = "w234", journalpostferdigstilt = true)
+
+        dokarkivMockServer.expect(
+            once(),
+            requestTo(URI("http://dokarkiv/rest/journalpostapi/v1/journalpost?forsoekFerdigstill=true"))
+        )
+            .andExpect(method(HttpMethod.POST))
+            .andRespond(
+                withStatus(HttpStatus.OK)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(jpostresponse.serialisertTilString())
+            )
+
+        val getPersonResponse = GetPersonResponse(
+            errors = emptyList(),
+            data = ResponseData(
+                hentPerson = HentPerson(navn = listOf(Navn(fornavn = "For", mellomnavn = "Midt", etternavn = "Efter"))),
+                hentIdenter = HentIdenter(listOf(PdlIdent(gruppe = AKTORID, "aktorid123")))
+            )
+        )
+
+        flexFssProxyMockServer.expect(
+            once(),
+            requestTo(URI("http://flex-fss-proxy/api/pdl/graphql"))
+        )
+            .andExpect(method(HttpMethod.POST))
+            .andRespond(
+                withStatus(HttpStatus.OK)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(getPersonResponse.serialisertTilString())
+            )
+
+        val kvittering = Kvittering(
+            kvitteringId = "abc",
+            blobId = "1234",
+            navn = "hva",
+            datoForReise = LocalDate.of(2020, 12, 24),
+            storrelse = 123L,
+            belop = 10000,
+            transportmiddel = Transportmiddel.EGEN_BIL
+        )
+        val soknad = Reisetilskudd(
+            status = ReisetilskuddStatus.SENDT,
+            fnr = "12345600000",
+            reisetilskuddId = UUID.randomUUID().toString(),
+            kvitteringer = listOf(kvittering),
+            fom = LocalDate.now(),
+            tom = LocalDate.now(),
+        )
+
+        pdfGenMockServer.expect(
+            once(),
+            requestTo(URI("http://flex-reisetilskudd-pdfgen/api/v1/genpdf/reisetilskudd/reisetilskudd"))
+        )
+            .andExpect(method(HttpMethod.POST))
+            .andExpect(jsonPath("$.navn", `is`("For Midt Efter")))
+            .andExpect(jsonPath("$.reisetilskuddId", `is`(soknad.reisetilskuddId)))
+            .andExpect(jsonPath("$.kvitteringer[0].kvitteringId", `is`(kvittering.kvitteringId)))
+            .andExpect(jsonPath("$.kvitteringer[0].b64data", `is`("3q2+7w==")))
+            .andRespond(
+                withStatus(HttpStatus.OK)
+                    .contentType(MediaType.APPLICATION_PDF)
+                    .body("PDF bytes :)")
+            )
+
+        flexBucketUploaderMockServer.expect(
+            once(),
+            requestTo(URI("http://flex-bucket-uploader/maskin/kvittering/${kvittering.blobId}"))
+        )
+            .andExpect(method(HttpMethod.GET))
+            .andRespond(
+                withStatus(HttpStatus.OK)
+                    .contentType(MediaType.IMAGE_JPEG)
+                    .body(ubyteArrayOf(0xDEu, 0xADu, 0xBEu, 0xEFu).toByteArray())
+            )
+
+        oppgaveMockServer.expect(
+            manyTimes(),
+            requestTo(URI("http://oppgave/api/v1/oppgaver"))
+        )
+            .andExpect(method(HttpMethod.POST))
+            .andRespond(
+                withStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+            )
+
+        producer.send(ProducerRecord(FLEX_APEN_REISETILSKUDD_TOPIC, soknad.reisetilskuddId, soknad.serialisertTilString())).get()
+
+        await().atMost(3, TimeUnit.SECONDS).until {
+            innsendingRepository.findInnsendingByReisetilskuddId(soknad.reisetilskuddId) != null
+        }
+
+        val innsending = innsendingRepository.findInnsendingByReisetilskuddId(soknad.reisetilskuddId)!!
+
+        assertThat(innsending.reisetilskuddId, `is`(soknad.reisetilskuddId))
+        assertThat(innsending.fnr, `is`(soknad.fnr))
+        assertThat(innsending.journalpostId, `is`(jpostresponse.journalpostId))
+        assertThat(innsending.oppgaveId, `is`(nullValue()))
+        assertThat(Instant.now().toEpochMilli() - innsending.opprettet.toEpochMilli(), lessThan(2000))
+
+        pdfGenMockServer.verify()
+        flexBucketUploaderMockServer.verify()
+        dokarkivMockServer.verify()
+        oppgaveMockServer.verify()
+    }
+
+    @Test
+    fun `SENDT søknad hvor oppgave opprettelse tidligere feilet prosesseres igjen og oppdateres i databasen`() {
+        reisetilskuddConsumer.meldinger = 0
+
+        val eksisterendeInnsendingUtenOppgaveId = innsendingRepository.save(
+            Innsending(
+                reisetilskuddId = UUID.randomUUID().toString(),
+                opprettet = Instant.now(),
+                journalpostId = "jpost12",
+                fnr = "12345600000",
+            )
+        )
+
+        val getPersonResponse = GetPersonResponse(
+            errors = emptyList(),
+            data = ResponseData(
+                hentPerson = HentPerson(navn = listOf(Navn(fornavn = "For", mellomnavn = "Midt", etternavn = "Efter"))),
+                hentIdenter = HentIdenter(listOf(PdlIdent(gruppe = AKTORID, "aktorid123")))
+            )
+        )
+
+        flexFssProxyMockServer.expect(
+            once(),
+            requestTo(URI("http://flex-fss-proxy/api/pdl/graphql"))
+        )
+            .andExpect(method(HttpMethod.POST))
+            .andRespond(
+                withStatus(HttpStatus.OK)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(getPersonResponse.serialisertTilString())
+            )
+
+        val kvittering = Kvittering(
+            kvitteringId = "abc",
+            blobId = "1234",
+            navn = "hva",
+            datoForReise = LocalDate.of(2020, 12, 24),
+            storrelse = 123L,
+            belop = 10000,
+            transportmiddel = Transportmiddel.EGEN_BIL
+        )
+        val soknad = Reisetilskudd(
+            status = ReisetilskuddStatus.SENDT,
+            fnr = "12345600000",
+            reisetilskuddId = eksisterendeInnsendingUtenOppgaveId.reisetilskuddId,
+            kvitteringer = listOf(kvittering),
+            fom = LocalDate.now(),
+            tom = LocalDate.now(),
+        )
+
+        val oppgaveResponse = OppgaveResponse(id = 1234)
+        oppgaveMockServer.expect(
+            once(),
+            requestTo(URI("http://oppgave/api/v1/oppgaver"))
+        )
+            .andExpect(method(HttpMethod.POST))
+            .andRespond(
+                withStatus(HttpStatus.OK)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(oppgaveResponse.serialisertTilString())
+            )
+
+        producer.send(ProducerRecord(FLEX_APEN_REISETILSKUDD_TOPIC, soknad.reisetilskuddId, soknad.serialisertTilString())).get()
+
+        await().atMost(3, TimeUnit.SECONDS).until { reisetilskuddConsumer.meldinger == 1 }
+
+        val innsending = innsendingRepository.findInnsendingByReisetilskuddId(soknad.reisetilskuddId)!!
+
+        assertThat(innsending.reisetilskuddId, `is`(soknad.reisetilskuddId))
+        assertThat(innsending.fnr, `is`(soknad.fnr))
+        assertThat(innsending.journalpostId, `is`(eksisterendeInnsendingUtenOppgaveId.journalpostId))
+        assertThat(innsending.oppgaveId, `is`(1234))
+        assertThat(Instant.now().toEpochMilli() - innsending.opprettet.toEpochMilli(), lessThan(2000))
+
+        dokarkivMockServer.verify()
+        oppgaveMockServer.verify()
     }
 
     @Test
@@ -191,7 +398,9 @@ class InnsendingIntegrationTest {
         val soknad = Reisetilskudd(
             status = ReisetilskuddStatus.FREMTIDIG,
             fnr = "12345600000",
-            reisetilskuddId = UUID.randomUUID().toString()
+            reisetilskuddId = UUID.randomUUID().toString(),
+            fom = LocalDate.now(),
+            tom = LocalDate.now(),
         )
 
         producer.send(ProducerRecord(FLEX_APEN_REISETILSKUDD_TOPIC, soknad.reisetilskuddId, soknad.serialisertTilString())).get()
@@ -211,7 +420,7 @@ class InnsendingIntegrationTest {
             reisetilskuddId = UUID.randomUUID().toString(),
             opprettet = Instant.now(),
             journalpostId = "jpost12",
-            saksId = "sakem",
+            oppgaveId = 1,
             fnr = "12345600000",
         )
 
@@ -221,6 +430,8 @@ class InnsendingIntegrationTest {
             status = ReisetilskuddStatus.SENDT,
             fnr = eksisterendeInnsending.fnr,
             reisetilskuddId = eksisterendeInnsending.reisetilskuddId,
+            fom = LocalDate.now(),
+            tom = LocalDate.now(),
         )
 
         producer.send(ProducerRecord(FLEX_APEN_REISETILSKUDD_TOPIC, soknad.reisetilskuddId, soknad.serialisertTilString())).get()

@@ -5,7 +5,8 @@
   "kafkaPool": "nav-prod",
   "externalHosts": [
     "flex-fss-proxy.prod-fss-pub.nais.io",
-    "dokarkiv.prod-fss-pub.nais.io"
+    "dokarkiv.prod-fss-pub.nais.io",
+    "oppgave.prod-fss-pub.nais.io"
   ],
   "azureTenant": "nav.no",
   "env": {
@@ -13,6 +14,8 @@
     "FLEX_FSS_PROXY_URL": "https://flex-fss-proxy.prod-fss-pub.nais.io",
     "DOKARKIV_AAD_CLIENT_ID": "162b3255-2f72-4399-8f7a-244add9ffaac",
     "DOKARKIV_URL": "https://dokarkiv.prod-fss-pub.nais.io",
-    "BUCKET_UPLOADER_URL": "http://flex-bucket-uploader"
+    "BUCKET_UPLOADER_URL": "http://flex-bucket-uploader",
+    "OPPGAVE_URL": "https://oppgave.prod-fss-pub.nais.io",
+    "OPPGAVE_AAD_CLIENT_ID": "50346823-61a0-49e7-ad89-ea2b1a0e90f8"
   }
 }
