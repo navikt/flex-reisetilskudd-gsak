@@ -44,7 +44,7 @@ dependencies {
     implementation("org.springframework.kafka:spring-kafka")
     implementation("org.springframework.boot:spring-boot-starter-data-jdbc")
     implementation("org.flywaydb:flyway-core")
-    implementation("no.nav.security:token-client-spring:1.3.2")
+    implementation("no.nav.security:token-client-spring:1.3.3")
     implementation("no.nav.security:token-validation-spring:1.3.2")
     implementation("org.slf4j:slf4j-api")
     implementation("org.aspectj:aspectjrt")
