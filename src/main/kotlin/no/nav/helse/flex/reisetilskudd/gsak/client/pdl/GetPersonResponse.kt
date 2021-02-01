@@ -1,5 +1,7 @@
 package no.nav.helse.flex.reisetilskudd.gsak.client.pdl
 
+const val AKTORID = "AKTORID"
+
 data class GetPersonResponse(
     val data: ResponseData,
     val errors: List<ResponseError>?
@@ -54,3 +56,5 @@ fun Navn.format(): String =
     } else {
         "$fornavn $etternavn"
     }
+
+fun ResponseData.aktorId() = this.hentIdenter?.identer?.firstOrNull { it.gruppe == AKTORID }?.ident

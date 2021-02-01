@@ -35,7 +35,8 @@ repositories {
 }
 
 val testContainersVersion = "1.15.1"
-
+val tokenSupportVersion = "1.3.3"
+val logstashLogbackEncoderVersion = "6.6"
 dependencies {
     implementation("org.springframework.boot:spring-boot-starter")
     implementation("org.jetbrains.kotlin:kotlin-reflect")
@@ -44,14 +45,14 @@ dependencies {
     implementation("org.springframework.kafka:spring-kafka")
     implementation("org.springframework.boot:spring-boot-starter-data-jdbc")
     implementation("org.flywaydb:flyway-core")
-    implementation("no.nav.security:token-client-spring:1.3.2")
-    implementation("no.nav.security:token-validation-spring:1.3.2")
+    implementation("no.nav.security:token-client-spring:$tokenSupportVersion")
+    implementation("no.nav.security:token-validation-spring:$tokenSupportVersion")
     implementation("org.slf4j:slf4j-api")
     implementation("org.aspectj:aspectjrt")
     implementation("org.aspectj:aspectjweaver")
     implementation("org.hibernate.validator:hibernate-validator")
     implementation("org.springframework.boot:spring-boot-starter-logging")
-    implementation("net.logstash.logback:logstash-logback-encoder:6.6")
+    implementation("net.logstash.logback:logstash-logback-encoder:$logstashLogbackEncoderVersion")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
     implementation("org.springframework.retry:spring-retry")
 

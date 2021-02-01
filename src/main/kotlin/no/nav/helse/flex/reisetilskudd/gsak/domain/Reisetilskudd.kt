@@ -9,6 +9,8 @@ data class Reisetilskudd(
     val reisetilskuddId: String,
     val fnr: String,
     val kvitteringer: List<Kvittering> = emptyList(),
+    val fom: LocalDate,
+    val tom: LocalDate,
 )
 
 enum class ReisetilskuddStatus {

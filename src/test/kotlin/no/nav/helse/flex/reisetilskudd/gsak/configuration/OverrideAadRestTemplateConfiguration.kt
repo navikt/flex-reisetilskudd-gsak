@@ -15,6 +15,10 @@ class OverrideAadRestTemplateConfiguration {
         restTemplateBuilder.build()
 
     @Bean
+    fun oppgaveRestTemplate(restTemplateBuilder: RestTemplateBuilder): RestTemplate =
+        restTemplateBuilder.build()
+
+    @Bean
     fun flexFssProxyRestTemplate(restTemplateBuilder: RestTemplateBuilder): RestTemplate =
         restTemplateBuilder.build()
 
