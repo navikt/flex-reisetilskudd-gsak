@@ -41,11 +41,17 @@ query(${"$"}ident: ID!){
       gradering
     }
   }
+  hentIdenter(ident: ${"$"}ident, historikk: false) {
+    identer {
+      ident,
+      gruppe
+    }
+  }
 }
 """
 
     @Retryable(exclude = [FunctionalPdlError::class])
-    fun hentPerson(fnr: String): HentPerson {
+    fun hentPerson(fnr: String): ResponseData {
 
         val graphQLRequest = GraphQLRequest(
             query = HENT_PERSON_QUERY,
@@ -60,7 +66,7 @@ query(${"$"}ident: ID!){
 
         val parsedResponse: GetPersonResponse? = responseEntity.body?.let { objectMapper.readValue(it) }
 
-        parsedResponse?.data?.hentPerson?.let {
+        parsedResponse?.data?.let {
             return it
         }
         throw FunctionalPdlError("Fant ikke person, ingen body eller data. ${parsedResponse.hentErrors()}")

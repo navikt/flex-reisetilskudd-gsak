@@ -8,7 +8,7 @@ data class Innsending(
     val id: String? = null,
     val fnr: String,
     val reisetilskuddId: String,
-    val saksId: String,
+    val oppgaveId: Int? = null,
     val journalpostId: String,
     val opprettet: Instant,
 )
