@@ -92,7 +92,7 @@ class InnsendingService(
                 aktivDato = LocalDate.now().format(oppgaveDato),
                 fristFerdigstillelse = omTreUkedager(LocalDate.now()).format(oppgaveDato),
                 prioritet = "NORM",
-                behandlingstema = "ab0061" // TODO eget tema (finnes egen trello lapp)
+                behandlingstema = "ab0237"
             ),
             reisetilskuddId = reisetilskudd.reisetilskuddId
         )

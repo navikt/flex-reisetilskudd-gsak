@@ -143,8 +143,8 @@ class InnsendingIntegrationTest {
             fnr = "12345600000",
             reisetilskuddId = UUID.randomUUID().toString(),
             kvitteringer = listOf(kvittering),
-            fom = LocalDate.now(),
-            tom = LocalDate.now(),
+            fom = LocalDate.of(2020, 3, 12),
+            tom = LocalDate.of(2020, 3, 20),
         )
 
         pdfGenMockServer.expect(
@@ -179,10 +179,14 @@ class InnsendingIntegrationTest {
             requestTo(URI("http://oppgave/api/v1/oppgaver"))
         )
             .andExpect(method(HttpMethod.POST))
+            .andExpect(jsonPath("$.behandlingstema", `is`("ab0237")))
+            .andExpect(jsonPath("$.beskrivelse", `is`("Søknad om reisetilskudd for perioden 12.03.2020 - 20.03.2020")))
+
             .andRespond(
                 withStatus(HttpStatus.OK)
                     .contentType(MediaType.APPLICATION_JSON)
                     .body(oppgaveResponse.serialisertTilString())
+
             )
 
         producer.send(ProducerRecord(FLEX_APEN_REISETILSKUDD_TOPIC, soknad.reisetilskuddId, soknad.serialisertTilString())).get()
