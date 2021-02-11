@@ -17,7 +17,7 @@ buildscript {
         maven("https://plugins.gradle.org/m2/")
     }
     dependencies {
-        classpath("org.jlleitschuh.gradle:ktlint-gradle:9.4.1")
+        classpath("org.jlleitschuh.gradle:ktlint-gradle:10.0.0")
     }
 }
 
