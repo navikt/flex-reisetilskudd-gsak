@@ -5,7 +5,8 @@ import java.time.LocalDate
 data class PdfRequest(
     val navn: String,
     val reisetilskuddId: String,
-    val kvitteringer: List<PdfKvittering>
+    val kvitteringer: List<PdfKvittering>,
+    val sum: Int
 )
 
 data class PdfKvittering(

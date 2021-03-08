@@ -25,8 +25,7 @@ import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.junit.jupiter.SpringExtension
-import org.springframework.test.web.client.ExpectedCount.manyTimes
-import org.springframework.test.web.client.ExpectedCount.once
+import org.springframework.test.web.client.ExpectedCount.*
 import org.springframework.test.web.client.MockRestServiceServer
 import org.springframework.test.web.client.match.MockRestRequestMatchers.*
 import org.springframework.test.web.client.response.MockRestResponseCreators.withStatus
@@ -156,6 +155,7 @@ class InnsendingIntegrationTest {
             .andExpect(jsonPath("$.reisetilskuddId", `is`(soknad.reisetilskuddId)))
             .andExpect(jsonPath("$.kvitteringer[0].kvitteringId", `is`(kvittering.kvitteringId)))
             .andExpect(jsonPath("$.kvitteringer[0].b64data", `is`("3q2+7w==")))
+            .andExpect(jsonPath("$.sum", `is`(10000)))
             .andRespond(
                 withStatus(HttpStatus.OK)
                     .contentType(MediaType.APPLICATION_PDF)
