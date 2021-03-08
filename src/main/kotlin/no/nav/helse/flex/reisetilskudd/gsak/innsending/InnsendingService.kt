@@ -60,7 +60,8 @@ class InnsendingService(
                 PdfRequest(
                     navn = navn,
                     reisetilskuddId = reisetilskudd.reisetilskuddId,
-                    kvitteringer = kvitteringer
+                    kvitteringer = kvitteringer,
+                    sum = kvitteringer.sumBy { it.belop }
                 )
             )
 
