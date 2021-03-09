@@ -65,9 +65,11 @@ class InnsendingService(
             val pdf = pdfGeneratorClient.genererPdf(
                 PdfRequest(
                     navn = navn,
+                    fnr = reisetilskudd.fnr,
                     reisetilskuddId = reisetilskudd.id,
                     kvitteringer = kvitteringer,
                     sporsmal = sporsmal,
+                    sendt = reisetilskudd.sendt!!,
                     sum = kvitteringer.sumBy { it.belop }
                 )
             )

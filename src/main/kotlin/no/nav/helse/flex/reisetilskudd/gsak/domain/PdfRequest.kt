@@ -1,12 +1,15 @@
 package no.nav.helse.flex.reisetilskudd.gsak.domain
 
+import java.time.Instant
 import java.time.LocalDate
 
 data class PdfRequest(
     val navn: String,
+    val fnr: String,
     val reisetilskuddId: String,
     val kvitteringer: List<PdfKvittering>,
     val sporsmal: List<Sporsmal>,
+    val sendt: Instant,
     val sum: Int
 )
 

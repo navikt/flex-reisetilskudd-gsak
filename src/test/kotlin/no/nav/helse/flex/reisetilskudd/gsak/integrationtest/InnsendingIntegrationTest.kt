@@ -35,6 +35,8 @@ import org.testcontainers.junit.jupiter.Testcontainers
 import java.net.URI
 import java.time.Instant
 import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.ZoneOffset
 import java.util.*
 import java.util.concurrent.TimeUnit
 
@@ -141,7 +143,8 @@ class InnsendingIntegrationTest {
             id = UUID.randomUUID().toString(),
             sporsmal = listOf(sporsmalMedKvittering(kvittering)),
             fom = LocalDate.of(2020, 3, 12),
-            tom = LocalDate.of(2020, 3, 20)
+            tom = LocalDate.of(2020, 3, 20),
+            sendt = LocalDateTime.of(2020, 3, 20, 16, 0, 0).toInstant(ZoneOffset.UTC)
         )
 
         pdfGenMockServer.expect(
@@ -151,6 +154,7 @@ class InnsendingIntegrationTest {
             .andExpect(method(HttpMethod.POST))
             .andExpect(jsonPath("$.navn", `is`("For Midt Efter")))
             .andExpect(jsonPath("$.reisetilskuddId", `is`(soknad.id)))
+            .andExpect(jsonPath("$.sendt", `is`("2020-03-20T16:00:00Z")))
             .andExpect(jsonPath("$.kvitteringer[0].b64data", `is`("3q2+7w==")))
             .andExpect(jsonPath("$.sum", `is`(10000)))
             .andRespond(
@@ -254,7 +258,8 @@ class InnsendingIntegrationTest {
             id = UUID.randomUUID().toString(),
             sporsmal = listOf(sporsmalMedKvittering(kvittering)),
             fom = LocalDate.of(2020, 3, 12),
-            tom = LocalDate.of(2020, 3, 20)
+            tom = LocalDate.of(2020, 3, 20),
+            sendt = LocalDateTime.of(2020, 3, 20, 16, 0, 0).toInstant(ZoneOffset.UTC)
         )
 
         pdfGenMockServer.expect(
@@ -356,7 +361,8 @@ class InnsendingIntegrationTest {
             id = eksisterendeInnsendingUtenOppgaveId.reisetilskuddId,
             sporsmal = listOf(sporsmalMedKvittering(kvittering)),
             fom = LocalDate.of(2020, 3, 12),
-            tom = LocalDate.of(2020, 3, 20)
+            tom = LocalDate.of(2020, 3, 20),
+            sendt = LocalDateTime.of(2020, 3, 20, 16, 0, 0).toInstant(ZoneOffset.UTC)
         )
 
         val oppgaveResponse = OppgaveResponse(id = 1234)
@@ -428,6 +434,7 @@ class InnsendingIntegrationTest {
             id = eksisterendeInnsending.reisetilskuddId,
             fom = LocalDate.now(),
             tom = LocalDate.now(),
+            sendt = LocalDateTime.of(2020, 3, 20, 16, 0, 0).toInstant(ZoneOffset.UTC)
         )
 
         producer.send(ProducerRecord(FLEX_APEN_REISETILSKUDD_TOPIC, soknad.id, soknad.serialisertTilString())).get()
