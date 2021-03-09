@@ -2,33 +2,37 @@ package no.nav.helse.flex.reisetilskudd.gsak.domain
 
 import com.fasterxml.jackson.module.kotlin.readValue
 import no.nav.helse.flex.reisetilskudd.gsak.objectMapper
+import java.time.Instant
 import java.time.LocalDate
+import java.util.*
 
 data class Reisetilskudd(
+    val id: String,
     val status: ReisetilskuddStatus,
-    val reisetilskuddId: String,
     val fnr: String,
-    val kvitteringer: List<Kvittering> = emptyList(),
     val fom: LocalDate,
     val tom: LocalDate,
+    val sendt: Instant? = null,
+    val avbrutt: Instant? = null,
+    val arbeidsgiverOrgnummer: String? = null,
+    val arbeidsgiverNavn: String? = null,
+    val sporsmal: List<Sporsmal> = emptyList()
 )
 
 enum class ReisetilskuddStatus {
-    FREMTIDIG, ÅPEN, SENDBAR, SENDT, AVBRUTT
+    FREMTIDIG, ÅPEN, PÅBEGYNT, SENDBAR, SENDT, AVBRUTT
 }
 
-enum class Transportmiddel {
-    KOLLEKTIVT, TAXI, EGEN_BIL
+enum class Utgiftstype {
+    OFFENTLIG_TRANSPORT, TAXI, PARKERING, ANNET
 }
 
 data class Kvittering(
-    val kvitteringId: String? = null,
     val blobId: String,
-    val navn: String,
-    val datoForReise: LocalDate,
-    val storrelse: Long,
+    val datoForUtgift: LocalDate,
     val belop: Int, // Beløp i øre . 100kr = 10000
-    val transportmiddel: Transportmiddel
+    val typeUtgift: Utgiftstype,
+    val opprettet: Instant? = Instant.now(),
 )
 
 fun String.tilReisetilskudd(): Reisetilskudd = objectMapper.readValue(this)
