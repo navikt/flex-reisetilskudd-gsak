@@ -119,7 +119,7 @@ fun Kvittering.tilPdfKvittering(bucket: FlexBucketUploaderClient, encoder: Base6
         this.blobId,
         this.datoForUtgift,
         this.belop,
-        this.typeUtgift
+        this.typeUtgift.tilString()
     )
 
 fun omTreUkedager(idag: LocalDate) = when (idag.dayOfWeek) {

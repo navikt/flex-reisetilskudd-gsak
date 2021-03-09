@@ -18,5 +18,5 @@ data class PdfKvittering(
     val blobId: String,
     val datoForUtgift: LocalDate,
     val belop: Int,
-    val typeUtgift: Utgiftstype,
+    val typeUtgift: String,
 )

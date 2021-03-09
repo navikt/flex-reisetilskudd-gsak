@@ -134,7 +134,7 @@ class InnsendingIntegrationTest {
             blobId = "1234",
             datoForUtgift = LocalDate.of(2020, 12, 24),
             belop = 10000,
-            typeUtgift = Utgiftstype.ANNET
+            typeUtgift = Utgiftstype.OFFENTLIG_TRANSPORT
         )
 
         val soknad = Reisetilskudd(
@@ -156,6 +156,7 @@ class InnsendingIntegrationTest {
             .andExpect(jsonPath("$.reisetilskuddId", `is`(soknad.id)))
             .andExpect(jsonPath("$.sendt", `is`("2020-03-20T16:00:00Z")))
             .andExpect(jsonPath("$.kvitteringer[0].b64data", `is`("3q2+7w==")))
+            .andExpect(jsonPath("$.kvitteringer[0].typeUtgift", `is`("Offentlig transport")))
             .andExpect(jsonPath("$.sum", `is`(10000)))
             .andRespond(
                 withStatus(HttpStatus.OK)

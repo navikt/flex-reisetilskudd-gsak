@@ -36,3 +36,10 @@ data class Kvittering(
 )
 
 fun String.tilReisetilskudd(): Reisetilskudd = objectMapper.readValue(this)
+
+fun Utgiftstype.tilString(): String = when (this) {
+    Utgiftstype.OFFENTLIG_TRANSPORT -> "Offentlig transport"
+    Utgiftstype.TAXI -> "Taxi"
+    Utgiftstype.PARKERING -> "Parkering"
+    Utgiftstype.ANNET -> "Annet"
+}
