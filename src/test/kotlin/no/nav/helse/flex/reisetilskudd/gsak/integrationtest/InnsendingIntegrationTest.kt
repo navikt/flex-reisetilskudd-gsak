@@ -6,6 +6,7 @@ import no.nav.helse.flex.reisetilskudd.gsak.client.pdl.*
 import no.nav.helse.flex.reisetilskudd.gsak.config.FLEX_APEN_REISETILSKUDD_TOPIC
 import no.nav.helse.flex.reisetilskudd.gsak.database.InnsendingRepository
 import no.nav.helse.flex.reisetilskudd.gsak.domain.*
+import no.nav.helse.flex.reisetilskudd.gsak.domain.Tag
 import no.nav.helse.flex.reisetilskudd.gsak.kafka.ReisetilskuddConsumer
 import no.nav.helse.flex.reisetilskudd.gsak.objectMapper
 import org.apache.kafka.clients.producer.KafkaProducer
@@ -15,8 +16,7 @@ import org.hamcrest.CoreMatchers.`is`
 import org.hamcrest.CoreMatchers.nullValue
 import org.hamcrest.MatcherAssert.assertThat
 import org.hamcrest.Matchers.lessThan
-import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.*
 import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
@@ -129,21 +129,19 @@ class InnsendingIntegrationTest {
             )
 
         val kvittering = Kvittering(
-            kvitteringId = "abc",
             blobId = "1234",
-            navn = "hva",
-            datoForReise = LocalDate.of(2020, 12, 24),
-            storrelse = 123L,
+            datoForUtgift = LocalDate.of(2020, 12, 24),
             belop = 10000,
-            transportmiddel = Transportmiddel.EGEN_BIL
+            typeUtgift = Utgiftstype.ANNET
         )
+
         val soknad = Reisetilskudd(
             status = ReisetilskuddStatus.SENDT,
             fnr = "12345600000",
-            reisetilskuddId = UUID.randomUUID().toString(),
-            kvitteringer = listOf(kvittering),
+            id = UUID.randomUUID().toString(),
+            sporsmal = listOf(sporsmalMedKvittering(kvittering)),
             fom = LocalDate.of(2020, 3, 12),
-            tom = LocalDate.of(2020, 3, 20),
+            tom = LocalDate.of(2020, 3, 20)
         )
 
         pdfGenMockServer.expect(
@@ -152,8 +150,7 @@ class InnsendingIntegrationTest {
         )
             .andExpect(method(HttpMethod.POST))
             .andExpect(jsonPath("$.navn", `is`("For Midt Efter")))
-            .andExpect(jsonPath("$.reisetilskuddId", `is`(soknad.reisetilskuddId)))
-            .andExpect(jsonPath("$.kvitteringer[0].kvitteringId", `is`(kvittering.kvitteringId)))
+            .andExpect(jsonPath("$.reisetilskuddId", `is`(soknad.id)))
             .andExpect(jsonPath("$.kvitteringer[0].b64data", `is`("3q2+7w==")))
             .andExpect(jsonPath("$.sum", `is`(10000)))
             .andRespond(
@@ -189,13 +186,13 @@ class InnsendingIntegrationTest {
 
             )
 
-        producer.send(ProducerRecord(FLEX_APEN_REISETILSKUDD_TOPIC, soknad.reisetilskuddId, soknad.serialisertTilString())).get()
+        producer.send(ProducerRecord(FLEX_APEN_REISETILSKUDD_TOPIC, soknad.id, soknad.serialisertTilString())).get()
 
         await().atMost(3, TimeUnit.SECONDS).until { reisetilskuddConsumer.meldinger == 1 }
 
-        val innsending = innsendingRepository.findInnsendingByReisetilskuddId(soknad.reisetilskuddId)!!
+        val innsending = innsendingRepository.findInnsendingByReisetilskuddId(soknad.id)!!
 
-        assertThat(innsending.reisetilskuddId, `is`(soknad.reisetilskuddId))
+        assertThat(innsending.reisetilskuddId, `is`(soknad.id))
         assertThat(innsending.fnr, `is`(soknad.fnr))
         assertThat(innsending.journalpostId, `is`(jpostresponse.journalpostId))
         assertThat(innsending.oppgaveId, `is`(1234))
@@ -245,21 +242,19 @@ class InnsendingIntegrationTest {
             )
 
         val kvittering = Kvittering(
-            kvitteringId = "abc",
             blobId = "1234",
-            navn = "hva",
-            datoForReise = LocalDate.of(2020, 12, 24),
-            storrelse = 123L,
+            datoForUtgift = LocalDate.of(2020, 12, 24),
             belop = 10000,
-            transportmiddel = Transportmiddel.EGEN_BIL
+            typeUtgift = Utgiftstype.ANNET
         )
+
         val soknad = Reisetilskudd(
             status = ReisetilskuddStatus.SENDT,
             fnr = "12345600000",
-            reisetilskuddId = UUID.randomUUID().toString(),
-            kvitteringer = listOf(kvittering),
-            fom = LocalDate.now(),
-            tom = LocalDate.now(),
+            id = UUID.randomUUID().toString(),
+            sporsmal = listOf(sporsmalMedKvittering(kvittering)),
+            fom = LocalDate.of(2020, 3, 12),
+            tom = LocalDate.of(2020, 3, 20)
         )
 
         pdfGenMockServer.expect(
@@ -268,8 +263,7 @@ class InnsendingIntegrationTest {
         )
             .andExpect(method(HttpMethod.POST))
             .andExpect(jsonPath("$.navn", `is`("For Midt Efter")))
-            .andExpect(jsonPath("$.reisetilskuddId", `is`(soknad.reisetilskuddId)))
-            .andExpect(jsonPath("$.kvitteringer[0].kvitteringId", `is`(kvittering.kvitteringId)))
+            .andExpect(jsonPath("$.reisetilskuddId", `is`(soknad.id)))
             .andExpect(jsonPath("$.kvitteringer[0].b64data", `is`("3q2+7w==")))
             .andRespond(
                 withStatus(HttpStatus.OK)
@@ -297,15 +291,15 @@ class InnsendingIntegrationTest {
                 withStatus(HttpStatus.INTERNAL_SERVER_ERROR)
             )
 
-        producer.send(ProducerRecord(FLEX_APEN_REISETILSKUDD_TOPIC, soknad.reisetilskuddId, soknad.serialisertTilString())).get()
+        producer.send(ProducerRecord(FLEX_APEN_REISETILSKUDD_TOPIC, soknad.id, soknad.serialisertTilString())).get()
 
         await().atMost(3, TimeUnit.SECONDS).until {
-            innsendingRepository.findInnsendingByReisetilskuddId(soknad.reisetilskuddId) != null
+            innsendingRepository.findInnsendingByReisetilskuddId(soknad.id) != null
         }
 
-        val innsending = innsendingRepository.findInnsendingByReisetilskuddId(soknad.reisetilskuddId)!!
+        val innsending = innsendingRepository.findInnsendingByReisetilskuddId(soknad.id)!!
 
-        assertThat(innsending.reisetilskuddId, `is`(soknad.reisetilskuddId))
+        assertThat(innsending.reisetilskuddId, `is`(soknad.id))
         assertThat(innsending.fnr, `is`(soknad.fnr))
         assertThat(innsending.journalpostId, `is`(jpostresponse.journalpostId))
         assertThat(innsending.oppgaveId, `is`(nullValue()))
@@ -350,21 +344,19 @@ class InnsendingIntegrationTest {
             )
 
         val kvittering = Kvittering(
-            kvitteringId = "abc",
             blobId = "1234",
-            navn = "hva",
-            datoForReise = LocalDate.of(2020, 12, 24),
-            storrelse = 123L,
+            datoForUtgift = LocalDate.of(2020, 12, 24),
             belop = 10000,
-            transportmiddel = Transportmiddel.EGEN_BIL
+            typeUtgift = Utgiftstype.ANNET
         )
+
         val soknad = Reisetilskudd(
             status = ReisetilskuddStatus.SENDT,
             fnr = "12345600000",
-            reisetilskuddId = eksisterendeInnsendingUtenOppgaveId.reisetilskuddId,
-            kvitteringer = listOf(kvittering),
-            fom = LocalDate.now(),
-            tom = LocalDate.now(),
+            id = eksisterendeInnsendingUtenOppgaveId.reisetilskuddId,
+            sporsmal = listOf(sporsmalMedKvittering(kvittering)),
+            fom = LocalDate.of(2020, 3, 12),
+            tom = LocalDate.of(2020, 3, 20)
         )
 
         val oppgaveResponse = OppgaveResponse(id = 1234)
@@ -379,13 +371,13 @@ class InnsendingIntegrationTest {
                     .body(oppgaveResponse.serialisertTilString())
             )
 
-        producer.send(ProducerRecord(FLEX_APEN_REISETILSKUDD_TOPIC, soknad.reisetilskuddId, soknad.serialisertTilString())).get()
+        producer.send(ProducerRecord(FLEX_APEN_REISETILSKUDD_TOPIC, soknad.id, soknad.serialisertTilString())).get()
 
         await().atMost(3, TimeUnit.SECONDS).until { reisetilskuddConsumer.meldinger == 1 }
 
-        val innsending = innsendingRepository.findInnsendingByReisetilskuddId(soknad.reisetilskuddId)!!
+        val innsending = innsendingRepository.findInnsendingByReisetilskuddId(soknad.id)!!
 
-        assertThat(innsending.reisetilskuddId, `is`(soknad.reisetilskuddId))
+        assertThat(innsending.reisetilskuddId, `is`(soknad.id))
         assertThat(innsending.fnr, `is`(soknad.fnr))
         assertThat(innsending.journalpostId, `is`(eksisterendeInnsendingUtenOppgaveId.journalpostId))
         assertThat(innsending.oppgaveId, `is`(1234))
@@ -402,16 +394,16 @@ class InnsendingIntegrationTest {
         val soknad = Reisetilskudd(
             status = ReisetilskuddStatus.FREMTIDIG,
             fnr = "12345600000",
-            reisetilskuddId = UUID.randomUUID().toString(),
+            id = UUID.randomUUID().toString(),
             fom = LocalDate.now(),
             tom = LocalDate.now(),
         )
 
-        producer.send(ProducerRecord(FLEX_APEN_REISETILSKUDD_TOPIC, soknad.reisetilskuddId, soknad.serialisertTilString())).get()
+        producer.send(ProducerRecord(FLEX_APEN_REISETILSKUDD_TOPIC, soknad.id, soknad.serialisertTilString())).get()
 
         await().atMost(3, TimeUnit.SECONDS).until { reisetilskuddConsumer.meldinger == 1 }
 
-        val innsending = innsendingRepository.findInnsendingByReisetilskuddId(soknad.reisetilskuddId)
+        val innsending = innsendingRepository.findInnsendingByReisetilskuddId(soknad.id)
 
         assertThat(innsending, nullValue())
     }
@@ -433,19 +425,26 @@ class InnsendingIntegrationTest {
         val soknad = Reisetilskudd(
             status = ReisetilskuddStatus.SENDT,
             fnr = eksisterendeInnsending.fnr,
-            reisetilskuddId = eksisterendeInnsending.reisetilskuddId,
+            id = eksisterendeInnsending.reisetilskuddId,
             fom = LocalDate.now(),
             tom = LocalDate.now(),
         )
 
-        producer.send(ProducerRecord(FLEX_APEN_REISETILSKUDD_TOPIC, soknad.reisetilskuddId, soknad.serialisertTilString())).get()
+        producer.send(ProducerRecord(FLEX_APEN_REISETILSKUDD_TOPIC, soknad.id, soknad.serialisertTilString())).get()
 
         await().atMost(3, TimeUnit.SECONDS).until { reisetilskuddConsumer.meldinger == 1 }
 
-        val innsending = innsendingRepository.findInnsendingByReisetilskuddId(soknad.reisetilskuddId)!!
+        val innsending = innsendingRepository.findInnsendingByReisetilskuddId(soknad.id)!!
 
         assertThat(innsending, `is`(eksisterendeInnsending.copy(id = innsending.id)))
     }
 }
 
 fun Any.serialisertTilString(): String = objectMapper.writeValueAsString(this)
+
+private fun sporsmalMedKvittering(kvittering: Kvittering) =
+    Sporsmal(
+        tag = Tag.KVITTERINGER,
+        svartype = Svartype.KVITTERING,
+        svar = listOf(Svar(kvittering = kvittering))
+    )

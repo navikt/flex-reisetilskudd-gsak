@@ -32,11 +32,11 @@ class InnsendingService(
     fun behandleReisetilskuddSoknad(soknadString: String) {
         val reisetilskudd = soknadString.tilReisetilskudd()
         if (reisetilskudd.status != ReisetilskuddStatus.SENDT) {
-            log.info("Ignorerer reisetilskuddsøknad ${reisetilskudd.reisetilskuddId} og status ${reisetilskudd.status}")
+            log.info("Ignorerer reisetilskuddsøknad ${reisetilskudd.id} og status ${reisetilskudd.status}")
             return
         }
 
-        var innsending = innsendingRepository.findInnsendingByReisetilskuddId(reisetilskudd.reisetilskuddId)
+        var innsending = innsendingRepository.findInnsendingByReisetilskuddId(reisetilskudd.id)
         if (innsending?.oppgaveId != null) {
             log.warn("Har allerede behandlet reisetilskuddsøknad ${innsending.reisetilskuddId} ${innsending.opprettet}")
             return
@@ -44,35 +44,42 @@ class InnsendingService(
 
         val person = pdlClient.hentPerson(fnr = reisetilskudd.fnr)
         val navn = person.hentPerson?.navn?.firstOrNull()?.format()
-            ?: throw RuntimeException("Fant ikke navn i PDL for reisetilskudd ${reisetilskudd.reisetilskuddId}")
+            ?: throw RuntimeException("Fant ikke navn i PDL for reisetilskudd ${reisetilskudd.id}")
 
         val aktorId = person.aktorId()
-            ?: throw RuntimeException("Fant ikke aktorid i PDL for reisetilskudd ${reisetilskudd.reisetilskuddId}")
+            ?: throw RuntimeException("Fant ikke aktorid i PDL for reisetilskudd ${reisetilskudd.id}")
 
         if (innsending == null) {
             val encoder = Base64.getEncoder()
 
-            val kvitteringer = reisetilskudd.kvitteringer.map {
-                it.tilPdfKvittering(bucketUploaderClient, encoder)
+            val kvitteringer = reisetilskudd.sporsmal.find {
+                it.tag == Tag.KVITTERINGER
+            }!!.svar.map {
+                it.kvittering!!.tilPdfKvittering(bucketUploaderClient, encoder)
+            }
+
+            val sporsmal = reisetilskudd.sporsmal.filterNot {
+                it.tag == Tag.KVITTERINGER
             }
 
             val pdf = pdfGeneratorClient.genererPdf(
                 PdfRequest(
                     navn = navn,
-                    reisetilskuddId = reisetilskudd.reisetilskuddId,
+                    reisetilskuddId = reisetilskudd.id,
                     kvitteringer = kvitteringer,
+                    sporsmal = sporsmal,
                     sum = kvitteringer.sumBy { it.belop }
                 )
             )
 
             val journalpostRequest = skapJournalpostRequest(reisetilskudd = reisetilskudd, pdf = pdf)
 
-            val journalpostResponse = dokArkivClient.opprettJournalpost(journalpostRequest, reisetilskudd.reisetilskuddId)
+            val journalpostResponse = dokArkivClient.opprettJournalpost(journalpostRequest, reisetilskudd.id)
 
             innsending = innsendingRepository.save(
                 Innsending(
                     fnr = reisetilskudd.fnr,
-                    reisetilskuddId = reisetilskudd.reisetilskuddId,
+                    reisetilskuddId = reisetilskudd.id,
                     journalpostId = journalpostResponse.journalpostId,
                     opprettet = Instant.now(),
                 )
@@ -95,25 +102,22 @@ class InnsendingService(
                 prioritet = "NORM",
                 behandlingstema = "ab0237"
             ),
-            reisetilskuddId = reisetilskudd.reisetilskuddId
+            reisetilskuddId = reisetilskudd.id
         )
 
         innsendingRepository.save(innsending.copy(oppgaveId = oppgaveResponse.id))
 
-        log.info("Behandlet reisetilskuddsøknad ${reisetilskudd.reisetilskuddId} og status ${reisetilskudd.status}")
+        log.info("Behandlet reisetilskuddsøknad ${reisetilskudd.id} og status ${reisetilskudd.status}")
     }
 }
 
 fun Kvittering.tilPdfKvittering(bucket: FlexBucketUploaderClient, encoder: Base64.Encoder) =
     PdfKvittering(
         encoder.encodeToString(bucket.hentVedlegg(this.blobId)),
-        this.kvitteringId,
         this.blobId,
-        this.navn,
-        this.datoForReise,
-        this.storrelse,
+        this.datoForUtgift,
         this.belop,
-        this.transportmiddel
+        this.typeUtgift
     )
 
 fun omTreUkedager(idag: LocalDate) = when (idag.dayOfWeek) {
