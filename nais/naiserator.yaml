@@ -36,6 +36,7 @@ spec:
         databases:
           - name: flex-reisetilskudd-gsak-db
             diskAutoresize: true
+            cascadingDelete: true
   accessPolicy:
     outbound:
       rules:
